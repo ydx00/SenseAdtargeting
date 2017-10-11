@@ -1,0 +1,13 @@
+hash: 095bbf5e85b33f08425b1a6b30ffaf6fc041c962f7ccf98d31d8ba47bf04880f
+updated: 2017-10-10T13:38:45.578497+08:00
+imports:
+- name: git.apache.org/thrift.git
+  version: 0dd823580c78a79ae9696eb9b3650e400fff140f
+  subpackages:
+  - lib/go/thrift
+- name: github.com/garyburd/redigo
+  version: 433969511232c397de61b1442f9fd49ec06ae9ba
+  subpackages:
+  - internal
+  - redis
+testImports: []
