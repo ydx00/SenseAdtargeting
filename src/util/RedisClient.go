@@ -5,8 +5,6 @@ import (
 	"time"
 	"fmt"
 	"set"
-	"git.apache.org/thrift.git/lib/go/thrift"
-	"log"
 )
 
 type RedisClient struct {
@@ -146,8 +144,7 @@ func (client *RedisClient) Add(redisInstance string,dbId int,key string,value st
 			fmt.Fprintln(err)
 		}
 	}()
-	_,select_err := conn.Do("SELECT",dbId)
-	if select_err != nil {
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
 	_,setx_err := conn.Do("SETEX",key,seconds,value)
@@ -159,7 +156,6 @@ func (client *RedisClient) Add(redisInstance string,dbId int,key string,value st
 
 func (client *RedisClient) Expire(redisInstance string,dbId int,key string,seconds int){
 	conn := client.GetConnection(redisInstance)
-	_,select_err := conn.Do("SELECT",dbId)
 	defer func() {
 		client.ReturnConn(conn)
 	}()
@@ -168,7 +164,7 @@ func (client *RedisClient) Expire(redisInstance string,dbId int,key string,secon
 			fmt.Fprintln(err)
 		}
 	}()
-	if select_err != nil {
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
 	_,expire_err := conn.Do("EXPIRE",key,seconds)
@@ -179,7 +175,6 @@ func (client *RedisClient) Expire(redisInstance string,dbId int,key string,secon
 
 func (client *RedisClient) Hmset(redisInstance string,dbId int,key string,dict map[string]string){
 	conn := client.GetConnection(redisInstance)
-	_,select_err := conn.Do("SELECT",dbId)
 	defer func() {
 		client.ReturnConn(conn)
 	}()
@@ -188,10 +183,10 @@ func (client *RedisClient) Hmset(redisInstance string,dbId int,key string,dict m
 			fmt.Fprintln(err)
 		}
 	}()
-	if select_err != nil {
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
-	_,hmset_err := conn.Do("HMSET",key,dict)
+	_,hmset_err := conn.Do("HMSET",dict)
 	if hmset_err != nil {
 		panic(hmset_err)
 	}
@@ -199,7 +194,6 @@ func (client *RedisClient) Hmset(redisInstance string,dbId int,key string,dict m
 
 func (client *RedisClient) Lset(redisInstance string,dbId int, key string,list []string){
 	conn := client.GetConnection(redisInstance)
-	_,select_err := conn.Do("SELECT",dbId)
 	defer func() {
 		client.ReturnConn(conn)
 	}()
@@ -208,10 +202,14 @@ func (client *RedisClient) Lset(redisInstance string,dbId int, key string,list [
 			fmt.Fprintln(err)
 		}
 	}()
-	if select_err != nil {
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
-	_,lset_err := conn.Do("LPUSH",key,list)
+	args := []interface{}{key}
+	for _,v := range list {
+		args = append(args,v)
+	}
+	_,lset_err := conn.Do("LPUSH",args)
 	if lset_err != nil {
 		panic(lset_err)
 	}
@@ -219,7 +217,6 @@ func (client *RedisClient) Lset(redisInstance string,dbId int, key string,list [
 
 func (client *RedisClient) LsetByPipeline(redisInstance string,dbId int,resultMap map[string]([]string),expireTime int){
 	conn := client.GetConnection(redisInstance)
-	_,select_err := conn.Do("SELECT",dbId)
 	defer func() {
 		client.ReturnConn(conn)
 	}()
@@ -228,27 +225,22 @@ func (client *RedisClient) LsetByPipeline(redisInstance string,dbId int,resultMa
 			fmt.Fprintln(err)
 		}
 	}()
-	if select_err != nil {
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
-	for key,value := range resultMap{
-		if err := conn.Send("LPUSH",key,value); err != nil {
-			panic(err)
-		}
+    r := NewRunner(conn)
+	for key,value := range resultMap {
+		r.send <- command{name: "LPUSH", args:[]interface{}{key,value},result:make(chan result,1)}
 		if expireTime > 0 {
-			if err := conn.Send("EXPIRE",key,expireTime); err != nil {
-				panic(err)
-			}
+			r.send <- command{name: "EXPIRE", args: []interface{}{key,expireTime},result:make(chan result,1)}
 		}
 	}
-	if err := conn.Flush(); err != nil {
-		panic(err)
-	}
+	close(r.stop)
+	<-r.done
 }
 
-func (client *RedisClient) LGetAllTargetAdWhithPipeline(dbId int,keys set.Set){
-	conn := client.GetConnection(REDIS_DM)
-	_,select_err := conn.Do("SELECT",dbId)
+func (client *RedisClient) HmsetByPipeline(redisInstance string,dbId int,resultMap map[string](map[string]string),expireTime int){
+	conn := client.GetConnection(redisInstance)
 	defer func() {
 		client.ReturnConn(conn)
 	}()
@@ -257,25 +249,91 @@ func (client *RedisClient) LGetAllTargetAdWhithPipeline(dbId int,keys set.Set){
 			fmt.Fprintln(err)
 		}
 	}()
-	if select_err != nil {
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
-	//result := set.NewHashSet()
-	for _,key := range keys.Elements(){
-        conn.Send("LRANGE",key,0,-1)
+	r := NewRunner(conn)
+	for key,value := range resultMap {
+		args := []interface{}{key}
+		for k,v := range value {
+			args = append(args,k,v)
+		}
+		r.send <- command{name: "HMSET", args:args,result:make(chan result,1)}
+		if expireTime > 0 {
+			r.send <- command{name: "EXPIRE", args: []interface{}{key,expireTime},result:make(chan result,1)}
+		}
 	}
-	err := conn.Flush()
+	close(r.stop)
+	<-r.done
+}
+
+func (client *RedisClient) LGetAllTargetAdWithPipeLine(dbId int,keys set.Set) (result set.Set) {
+	conn := client.GetConnection(REDIS_DM)
+	defer func() {
+		client.ReturnConn(conn)
+	}()
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Fprintln(err)
+		}
+	}()
+	r := NewRunner(conn)
+	for _,key := range keys.Elements(){
+		r.send <- command{name:"LRANGE",args:[]interface{}{key,0,-1},result:make(chan result,1)}
+	}
+	close(r.stop)
+	<-r.done
+	for _,v := range r.last{
+		result.Add(v.(string))
+	}
+	return result
+}
+
+func (client *RedisClient) Get(redisInstance string,dbId int,key string) string{
+	conn := client.GetConnection(redisInstance)
+	defer func() {
+		client.ReturnConn(conn)
+	}()
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Fprintln(err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId); select_err != nil {
+		panic(select_err)
+	}
+	value,err := redis.String(conn.Do("SELECT",key))
 	if err != nil {
 		panic(err)
 	}
-	for i := 0; i < keys.Len(); i++ {
-		reply,err := conn.Receive()
-		if err != nil {
-			panic(err)
-		}
-
-	}
-
-
+	return value
 }
+
+func (client *RedisClient) HGetAll(redisInstance string,dbId int,key string) map[string]string{
+	conn := client.GetConnection(redisInstance)
+	defer func() {
+		client.ReturnConn(conn)
+	}()
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Fprintln(err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
+		panic(select_err)
+	}
+	values,err := redis.StringMap(conn.Do("HGETALL",key))
+	if err != nil {
+		panic(err)
+	}
+	return values
+}
+
+
+
+
+
+
+
+
 
