@@ -10,11 +10,11 @@ import (
 type command struct {
 	name string
 	args []interface{}
-	result chan result
+	result chan Result
 }
 
 //redis结果
-type result struct {
+type Result struct {
 	err error
 	value interface{}
 }
@@ -23,10 +23,10 @@ type result struct {
 type runner struct {
 	conn redis.Conn
 	send chan command
-	recv chan chan result
+	recv chan chan Result
 	stop chan struct{}
 	done chan struct{}
-	last []interface{}
+	last []Result
 }
 
 //发送命令
@@ -59,10 +59,10 @@ func (r *runner) sender(){
 //结果接受者
 func (r *runner) receiver() {
 	for ch := range r.recv  {
-		var result result
+		var result Result
 		result.value,result.err = r.conn.Receive()
 		ch <- result
-		r.last = append(r.last,ch)
+		r.last = append(r.last,result)
 		if result.err != nil && r.conn.Err() != nil {
 			log.Fatal(r.conn.Err())
 		}
@@ -71,7 +71,7 @@ func (r *runner) receiver() {
 }
 
 func NewRunner(conn redis.Conn) *runner {
-	r := &runner{conn:conn,send:make(chan command,100),recv:make(chan chan result,100),stop:make(chan struct{}),done:make(chan struct{})}
+	r := &runner{conn:conn,send:make(chan command,100),recv:make(chan chan Result,100),stop:make(chan struct{}),done:make(chan struct{})}
 	go r.sender()
 	go r.receiver()
 	return r

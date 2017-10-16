@@ -17,8 +17,8 @@ func Search(appId string,userId string,broadcasterId string,adMode int,requestId
 
 	fansInfo := client.HGetAll(util.REDIS_BDP_REALTIME,util.REDIS_DB_BDP_REALTIME,util.AD_BDP_SENSEAR_USER_INFO + appId + ":" + userId)
     for k,v := range fansInfo{
-    	fmt.Fprintln(k)
-    	fmt.Fprintln(v)
+    	fmt.Println(k)
+    	fmt.Println(v)
 	}
 
 }
