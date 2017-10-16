@@ -5,6 +5,7 @@ import (
 	"time"
 	"fmt"
 	"set"
+	"log"
 )
 
 type RedisClient struct {
@@ -136,12 +137,11 @@ func (client *RedisClient) GetConnection(redisInstance string) (conn redis.Conn)
 	*/
 func (client *RedisClient) Add(redisInstance string,dbId int,key string,value string,seconds int){
 	conn := client.GetConnection(redisInstance)
-	defer func() {
-		client.ReturnConn(conn)
-	}()
+	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintln(err)
+			//fmt.Fprintln(string(err))
+			fmt.Errorf("出错了",err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -156,12 +156,10 @@ func (client *RedisClient) Add(redisInstance string,dbId int,key string,value st
 
 func (client *RedisClient) Expire(redisInstance string,dbId int,key string,seconds int){
 	conn := client.GetConnection(redisInstance)
-	defer func() {
-		client.ReturnConn(conn)
-	}()
+	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintln(err)
+			fmt.Errorf("出错了",err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -175,12 +173,10 @@ func (client *RedisClient) Expire(redisInstance string,dbId int,key string,secon
 
 func (client *RedisClient) Hmset(redisInstance string,dbId int,key string,dict map[string]string){
 	conn := client.GetConnection(redisInstance)
-	defer func() {
-		client.ReturnConn(conn)
-	}()
+	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintln(err)
+			fmt.Errorf("出错了",err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -194,12 +190,10 @@ func (client *RedisClient) Hmset(redisInstance string,dbId int,key string,dict m
 
 func (client *RedisClient) Lset(redisInstance string,dbId int, key string,list []string){
 	conn := client.GetConnection(redisInstance)
-	defer func() {
-		client.ReturnConn(conn)
-	}()
+	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintln(err)
+			fmt.Errorf("出错了",err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -217,12 +211,10 @@ func (client *RedisClient) Lset(redisInstance string,dbId int, key string,list [
 
 func (client *RedisClient) LsetByPipeline(redisInstance string,dbId int,resultMap map[string]([]string),expireTime int){
 	conn := client.GetConnection(redisInstance)
-	defer func() {
-		client.ReturnConn(conn)
-	}()
+	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintln(err)
+			fmt.Errorf("出错了",err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -241,12 +233,10 @@ func (client *RedisClient) LsetByPipeline(redisInstance string,dbId int,resultMa
 
 func (client *RedisClient) HmsetByPipeline(redisInstance string,dbId int,resultMap map[string](map[string]string),expireTime int){
 	conn := client.GetConnection(redisInstance)
-	defer func() {
-		client.ReturnConn(conn)
-	}()
+	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintln(err)
+			fmt.Errorf("出错了",err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -269,12 +259,10 @@ func (client *RedisClient) HmsetByPipeline(redisInstance string,dbId int,resultM
 
 func (client *RedisClient) LGetAllTargetAdWithPipeLine(dbId int,keys set.Set) (result set.Set) {
 	conn := client.GetConnection(REDIS_DM)
-	defer func() {
-		client.ReturnConn(conn)
-	}()
+	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintln(err)
+			fmt.Errorf("出错了",err)
 		}
 	}()
 	r := NewRunner(conn)
@@ -284,19 +272,25 @@ func (client *RedisClient) LGetAllTargetAdWithPipeLine(dbId int,keys set.Set) (r
 	close(r.stop)
 	<-r.done
 	for _,v := range r.last{
-		result.Add(v.(string))
+		//result.Add(v.(string))
+		res,ok := v.(result)
+		if ok {
+			if value,err := redis.String(res.value,res.err); err != nil{
+				continue
+			}else {
+				result.Add(value)
+			}
+		}
 	}
 	return result
 }
 
 func (client *RedisClient) Get(redisInstance string,dbId int,key string) string{
 	conn := client.GetConnection(redisInstance)
-	defer func() {
-		client.ReturnConn(conn)
-	}()
+	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintln(err)
+			fmt.Errorf("出错了",err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId); select_err != nil {
@@ -311,12 +305,10 @@ func (client *RedisClient) Get(redisInstance string,dbId int,key string) string{
 
 func (client *RedisClient) HGetAll(redisInstance string,dbId int,key string) map[string]string{
 	conn := client.GetConnection(redisInstance)
-	defer func() {
-		client.ReturnConn(conn)
-	}()
+	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintln(err)
+			fmt.Errorf("出错了",err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -329,11 +321,327 @@ func (client *RedisClient) HGetAll(redisInstance string,dbId int,key string) map
 	return values
 }
 
+func (client *RedisClient) HGetAllAdWithPipeline(dbId int,keys []string) map[string](map[string]string){
+	conn := client.GetConnection(REDIS_SENSEAR)
+	defer client.ReturnConn(conn)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Errorf("出错了",err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
+		panic(select_err)
+	}
 
+	r := NewRunner(conn)
+	for _,adId := range keys{
+		key := SARA_KEY_AD_BASEDATA + string(adId)
+        r.send <- command{name:"HGETALL",args:[]interface{}{key},result:make(chan result,1)}
+	}
+	close(r.stop)
+	<-r.done
+	result := make(map[string](map[string]string))
+	for i := 0; i < len(keys) ; i++  {
+		key := SARA_KEY_AD_BASEDATA + keys[i]
+		if r.last[i] != nil {
+			res,ok := (r.last[i]).(result)
+			if ok {
+				if value,err := redis.StringMap(res.value,res.err); err != nil{
+					continue
+				}else {
+					result[key] = value
+					(result[key])["advertisement_id"] = key
+				}
+			}
+		}
+	}
+	return result
+}
 
+func (client *RedisClient) HGetAllAdExInfoWhithPipeline(dbId int,keys []string) map[string](map[string]string){
+	conn := client.GetConnection(REDIS_DM)
+	defer client.ReturnConn(conn)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Errorf("出错了",err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
+		panic(select_err)
+	}
+	r := NewRunner(conn)
+	for _,adId := range keys{
+		key := SARA_KEY_AD_EX_INFO + string(adId)
+		r.send <- command{name:"HGETALL",args:[]interface{}{key},result:make(chan result,1)}
+	}
+	close(r.stop)
+	<-r.done
+	result := make(map[string](map[string]string))
+	for i := 0; i < len(keys) ; i++  {
+		key := SARA_KEY_AD_EX_INFO + keys[i]
+		if r.last[i] != nil {
+			res,ok := (r.last[i]).(result)
+			if ok {
+				if value,err := redis.StringMap(res.value,res.err); err != nil{
+					continue
+				}else {
+					result[key] = value
+				}
+			}
+		}
+	}
+	return result
+}
 
+func (client *RedisClient) HGetAllAdPlanWhithPipeline(dbId int,keys map[string]string) map[string](map[string]string){
+	conn := client.GetConnection(REDIS_SENSEAR)
+	defer client.ReturnConn(conn)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Errorf("出错了",err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
+		panic(select_err)
+	}
+	r := NewRunner(conn)
+	temp := []string{}
+	for key,value := range keys{
+        temp = append(temp,key,value)
+	}
+	for i := 1; i < len(temp); i += 2{
+		key := SARA_KEY_ADPLAN_COST_DATA + temp[i]
+		r.send <- command{name:"HGETALL",args:[]interface{}{key},result:make(chan result,1)}
+	}
+	close(r.stop)
+	<-r.done
+	result := make(map[string](map[string]string))
+	for i := 0; i < len(temp); i += 2  {
+		key := SARA_KEY_ADPLAN_COST_DATA + string(temp[i+1])
+		if r.last[i/2] != nil {
+			res,ok := (r.last[i/2]).(result)
+			if ok {
+				if value,err := redis.StringMap(res.value,res.err); err != nil{
+					continue
+				}else {
+					result[key] = value
+				}
+			}
+		}
+	}
+	return result
+}
 
+func (client *RedisClient) HGetAllAdvertiserInfoWhithPipeline(dbId int,keys map[string]string) map[string](map[string]string) {
+	conn := client.GetConnection(REDIS_SENSEAR)
+	defer client.ReturnConn(conn)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Errorf("出错了",err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
+		panic(select_err)
+	}
+	r := NewRunner(conn)
+	temp := []string{}
+	for key,value := range keys{
+		temp = append(temp,key,value)
+	}
+	for i := 1; i < len(temp); i += 2{
+		key := SARA_KEY_ADVERTISER_COST_DATA + temp[i]
+		r.send <- command{name:"HGETALL",args:[]interface{}{key},result:make(chan result,1)}
+	}
+	close(r.stop)
+	<-r.done
+	result := make(map[string](map[string]string))
+	for i := 0; i < len(temp); i += 2  {
+		key := SARA_KEY_ADVERTISER_COST_DATA + temp[i+1]
+		if r.last[(i+1)/2] != nil {
+			res,ok := (r.last[i/2]).(result)
+			if ok {
+				if value,err := redis.StringMap(res.value,res.err); err != nil{
+					continue
+				}else {
+					result[key] = value
+				}
+			}
+		}
+	}
+	return result
+}
 
+func (client *RedisClient) HGetAllAdPlanCostWhithPipeline(dbId int,keys map[string]string) map[string](map[string]string){
+	conn := client.GetConnection(REDIS_SENSEAR)
+	defer client.ReturnConn(conn)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Errorf("出错了",err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
+		panic(select_err)
+	}
+	r := NewRunner(conn)
+	temp := []string{}
+	for key,value := range keys{
+		temp = append(temp,key,value)
+	}
+	for i := 1; i < len(temp); i += 2{
+		key := AD_BDP_SENSEAR_ADPLAN_COST_DATA + temp[i]
+		r.send <- command{name:"HGETALL",args:[]interface{}{key},result:make(chan result,1)}
+	}
+	close(r.stop)
+	<-r.done
+	result := make(map[string](map[string]string))
+	for i := 0; i < len(temp); i += 2  {
+		key := AD_BDP_SENSEAR_ADPLAN_COST_DATA + temp[i+1]
+		if r.last[(i+1)/2] != nil {
+			res,ok := (r.last[i/2]).(result)
+			if ok {
+				if value,err := redis.StringMap(res.value,res.err); err != nil{
+					continue
+				}else {
+					result[key] = value
+				}
+			}
+		}
+	}
+	return result
+}
 
+func (client *RedisClient) HGetAllAdvertiserCostInfoWhithPipeline(dbId int,keys map[string]string) map[string](map[string]string)  {
+	conn := client.GetConnection(REDIS_BDP_REALTIME)
+	defer client.ReturnConn(conn)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Errorf("出错了",err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
+		panic(select_err)
+	}
+	r := NewRunner(conn)
+	temp := []string{}
+	for key,value := range keys{
+		temp = append(temp,key,value)
+	}
+	for i := 1; i < len(temp); i += 2{
+		key := AD_BDP_SENSEAR_ADVERTISER_COST_DATA + temp[i]
+		r.send <- command{name:"HGETALL",args:[]interface{}{key},result:make(chan result,1)}
+	}
+	close(r.stop)
+	<-r.done
+	result := make(map[string](map[string]string))
+	for i := 0; i < len(temp); i += 2  {
+		key := AD_BDP_SENSEAR_ADVERTISER_COST_DATA + string(temp[i+1])
+		if r.last[(i+1)/2] != nil {
+			//result[key] = (r.last[(i+1)/2]).(map[string]string)
+			res,ok := (r.last[i/2]).(result)
+			if ok {
+				if value,err := redis.StringMap(res.value,res.err); err != nil{
+					continue
+				}else {
+					result[key] = value
+				}
+			}
+		}
+	}
+	return result
+}
 
+func (client *RedisClient) HGetAllBroadcasterTagsWhithPipeline(dbId int,appId string) map[string]string{
+	conn := client.GetConnection(REDIS_SENSEAR)
+	defer client.ReturnConn(conn)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Errorf("出错了",err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
+		panic(select_err)
+	}
+	r := NewRunner(conn)
+	key := SARA_KEY_USER_TAGS + appId
+	r.send <- command{name:"HGETALL",args:[]interface{}{key},result:make(chan result,1)}
+	close(r.stop)
+	<-r.done
+	res, ok:= (r.last[0]).(result)
+	if ok {
+		if value,err :=  redis.StringMap(res.value,res.err);err != nil{
+			log.Fatal(err)
+			return nil
+		}else {
+			return value
+		}
+	}else {
+		return nil
+	}
+}
+
+func (client *RedisClient) HGetAllUserCoverageWhithPipeline(dbId int,appId string,keys []string)[]string{
+	conn := client.GetConnection(REDIS_DM)
+	defer client.ReturnConn(conn)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Errorf("出错了",err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
+		panic(select_err)
+	}
+	r := NewRunner(conn)
+	key := FANS_COUNT + appId
+	r.send <- command{name:"okHGETALL",args:[]interface{}{key},result:make(chan result,1)}
+	close(r.stop)
+	<-r.done
+	res, ok:= (r.last[0]).(result)
+	if ok {
+		if value,err :=  redis.Strings(res.value,res.err);err != nil{
+			log.Fatal(err)
+			return nil
+		}else {
+			return value
+		}
+	}else {
+		return nil
+	}
+}
+
+func (client *RedisClient) LRange(redisInstance string,dbId int,key string,start int,end int) []string{
+	conn := client.GetConnection(REDIS_DM)
+	defer client.ReturnConn(conn)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Errorf("出错了",err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
+		panic(select_err)
+	}
+	if value, err := redis.Strings(conn.Do("LRANGE",key,start,end)); err != nil{
+		log.Fatal(err)
+		return nil
+	}else {
+		return value
+	}
+}
+
+func (client *RedisClient) HGetAllApps(dbId int) []string{
+	conn := client.GetConnection(REDIS_SENSEAR)
+	defer client.ReturnConn(conn)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Errorf("出错了",err)
+		}
+	}()
+	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
+		panic(select_err)
+	}
+	if value,err := redis.Strings(conn.Do("LRANGE","SARA_KEY_APP_LIST",0,-1)); err != nil{
+		return nil
+	}else {
+		return value
+	}
+}
 
