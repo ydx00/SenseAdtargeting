@@ -103,7 +103,7 @@ func (client *RedisClient) ReturnConn(conn redis.Conn){
 	if conn != nil {
        err := conn.Close()
 		if err != nil {
-			panic("redis连接归还失败")
+			fmt.Errorf("redis连接归还失败",err)
 		}
 	}
 }
@@ -552,7 +552,7 @@ func (client *RedisClient) HGetAllUserCoverageWhithPipeline(dbId int,appId strin
 	}
 	r := NewRunner(conn)
 	key := FANS_COUNT + appId
-	r.send <- command{name:"okHGETALL",args:[]interface{}{key},result:make(chan Result,1)}
+	r.send <- command{name:"HGETALL",args:[]interface{}{key},result:make(chan Result,1)}
 	close(r.stop)
 	<-r.done
 	if value,err :=  redis.Strings(r.last[0].value,r.last[0].err);err != nil{
