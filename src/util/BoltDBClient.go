@@ -101,3 +101,27 @@ func GetInstance() *BoltDBClient{
 	return instance
 }
 
+func (client *BoltDBClient) GetCPM_AdInfoDB() *bolt.Bucket{
+	return client.CPM_AdInfo
+}
+
+func (client *BoltDBClient) GetCPM_AdStatDB() *bolt.Bucket{
+	return client.CPM_AdStat
+}
+
+func (client *BoltDBClient) GetCPT_AdInfoDB() *bolt.Bucket {
+	return client.CPT_AdInfo
+}
+
+func (client *BoltDBClient) GetCPT_AdStatDB() *bolt.Bucket{
+	return client.CPT_AdStat
+}
+
+func (client *BoltDBClient) GetPreload_adInfoDB() *bolt.Bucket{
+	return client.Preload_adInfo
+}
+
+func (client *BoltDBClient) GetAdMode_NumDB() *bolt.Bucket{
+	return client.AdMode_Num
+}
+
