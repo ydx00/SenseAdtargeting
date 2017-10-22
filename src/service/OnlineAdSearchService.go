@@ -201,11 +201,11 @@ func Search(appId string,userId string,broadcasterId string,adMode int,requestId
 			//}
 			//conditions.add(fansCondition+"_-1");
 			//}
-			var broadcasterTags []string
-			tag_ids,ok := broadcasterInfo["tag_ids"]
-			if ok {
-               broadcasterTags =
-			}
+			//var broadcasterTags []string
+			//tag_ids,ok := broadcasterInfo["tag_ids"]
+			//if ok {
+             //  broadcasterTags =
+			//}
 		}
 	}
 
