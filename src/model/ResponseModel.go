@@ -6,27 +6,27 @@ type ResponseModel struct {
 	requestId string
 }
 
-func (model *ResponseModel) setData(data []string){
+func (model *ResponseModel) SetData(data []string){
 	model.data = data
 }
 
-func (model *ResponseModel) setReason(reason string){
+func (model *ResponseModel) SetReason(reason string){
 	model.reason = reason
 }
 
-func (model *ResponseModel) setRequestId(requestId string){
+func (model *ResponseModel) SetRequestId(requestId string){
 	model.requestId = requestId
 }
 
-func (model *ResponseModel) getData() []string{
+func (model *ResponseModel) GetData() []string{
 	return model.data
 }
 
-func (model *ResponseModel) getReason() string{
+func (model *ResponseModel) GetReason() string{
 	return model.reason
 }
 
-func (model *ResponseModel) getRequest() string{
+func (model *ResponseModel) GetRequest() string{
 	return model.requestId
 }
 

@@ -123,7 +123,7 @@ func (client *BuntDBClient) WriteInt(key string, val int,bucket string) error {
 func (client *BuntDBClient) ReadInt(key string,bucket string) (int, error) {
 	val, err := client.get(key,bucket)
 	if err != nil {
-		return 0, err
+		return -1, err
 	}
 	return strconv.Atoi(cast.ToString(val))
 }
@@ -156,9 +156,9 @@ func (b *BuntDBClient) set(key string, value []byte,bucket string) error {
 /**
    将根据Key得到value
  */
-func (b *BuntDBClient) get(key string,bucket string) ([]byte, error) {
+func (client *BuntDBClient) get(key string,bucket string) ([]byte, error) {
 	var val []byte
-	err := b.db.View(func(tx *buntdb.Tx) error {
+	err := client.db.View(func(tx *buntdb.Tx) error {
 		sval, err := tx.Get(bucket + key)
 		if err != nil {
 			return err
@@ -168,7 +168,7 @@ func (b *BuntDBClient) get(key string,bucket string) ([]byte, error) {
 	})
 	if err != nil {
 		if err == buntdb.ErrNotFound {
-			return nil, err
+			return nil, nil
 		}
 	}
 	if err != nil {
@@ -176,7 +176,6 @@ func (b *BuntDBClient) get(key string,bucket string) ([]byte, error) {
 	}
 	return val, nil
 }
-
 
 
 /**
