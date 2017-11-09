@@ -1,0 +1,11 @@
+package: .
+import:
+- package: git.apache.org/thrift.git
+  subpackages:
+  - lib/go/thrift
+- package: github.com/garyburd/redigo
+  subpackages:
+  - redis
+- package: github.com/tidwall/buntdb
+- package: github.com/hashicorp/raft
+- package: github.com/tidwall/cast

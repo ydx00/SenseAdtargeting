@@ -9,7 +9,7 @@ import (
 	"math/rand"
 	"model"
 	"encoding/json"
-	"strconv"
+	"strings"
 )
 const(
 	USE_REDIS = 1
@@ -23,7 +23,7 @@ func Search(appId string,userId string,broadcasterId string,adMode int,requestId
 
 	startTime := time.Now().UnixNano()/1000
 
-	conditions := set.NewHashSet()
+	conditions := set.NewSimpleSet()
 	fansConditions := []string{}
 	cptConditions := set.NewHashSet()
 	cptCondition := fmt.Sprintf(util.AD_DM_SENSEAR_AD_STATIC_CPT,appId,":",adMode)
@@ -192,22 +192,51 @@ func Search(appId string,userId string,broadcasterId string,adMode int,requestId
 				conditions.Add(fansCondition+"_-1")
 			}
 		}else {
-			//List<String> broadcasterTags = Objects.nonNull(broadcasterInfo.get("tag_ids")) ?
-			//StringUtil.stringToListStr(broadcasterInfo.get("tag_ids")) :
-			//Lists.newArrayList();
-			//for(String fansCondition : fansConditions){
-			//for(String broadcasterTag : broadcasterTags){
-			//conditions.add(fansCondition+"_"+broadcasterTag);
-			//}
-			//conditions.add(fansCondition+"_-1");
-			//}
-			//var broadcasterTags []string
-			//tag_ids,ok := broadcasterInfo["tag_ids"]
-			//if ok {
-             //  broadcasterTags =
-			//}
+			broadcasterTags := make([]string,0)
+			tag_ids,ok := broadcasterInfo["tag_ids"]
+			if ok {
+               broadcasterTags = stringToListStr(tag_ids)
+			}
+			for _,fansCondition := range fansConditions{
+				for _,broadcasterTag := range broadcasterTags{
+					conditions.Add(fansCondition+"_"+broadcasterTag)
+				}
+				conditions.Add(fansCondition+"_-1")
+			}
+		}
+	}else if adMode == 5 {
+       for _,fansCondition := range fansConditions{
+       	  conditions.Add(fansCondition)
+	   }
+	}
+	log.Println("{\"requestId\":"+requestId+",\"info\":\"处理CPM广告条件时长===="+string(time.Now().UnixNano()/1000-st4)+"\"}")
+
+    st6 := time.Now().UnixNano()/1000
+	allAd := set.NewSimpleSet()
+    if USE_REDIS == 1{
+		//allAd = redisClient.lGetAllTargetAdWhithPipeline(Constant.REDIS_DB_DM,conditions);
+		allAd = redisclient.LGetAllTargetAdWithPipeLine(util.REDIS_DB_DM,conditions)
+	}else {
+		for _,condition := range conditions.Elements(){
+			adList,err := buntDBClient.ReadArr(string(condition),util.CPM_ADINFO_DB)
+			if err != nil && len(adList) != 0{
+				for _,advertise := range adList{
+					allAd.Add(advertise)
+				}
+			}
 		}
 	}
+	log.Println("{\"requestId\":"+requestId+",\"info\":\"从存储查询CPM广告时长===="+string(time.Now().UnixNano()/1000-st6)+"\"}")
+
+    st7 := time.Now().UnixNano()/1000
+	distinctAdIdList := make([]string,0)
+	for _,value := range allAd.Elements(){
+		distinctAdIdList = append(distinctAdIdList, string(value))
+	}
+
+
+
+
 
 }
 
@@ -218,3 +247,12 @@ func getStringFromMap(dict map[string]string,key string,default_value string) st
 		return default_value
 	}
 }
+
+func stringToListStr(str string) []string{
+	if str != "" {
+        return strings.Split(str,",")
+	} else{
+		return make([]string,0)
+	}
+}
+

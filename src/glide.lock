@@ -1,0 +1,39 @@
+hash: 0a6a8781d2cb1721c7ac7695b59165a48554537cba27215bc47d2239606db147
+updated: 2017-10-20T11:35:27.9941995+08:00
+imports:
+- name: git.apache.org/thrift.git
+  version: 8b8a8efea13d1c97f856053af0a5c0e6a8a76354
+  subpackages:
+  - lib/go/thrift
+- name: github.com/boltdb/bolt
+  version: 2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8
+- name: github.com/garyburd/redigo
+  version: 433969511232c397de61b1442f9fd49ec06ae9ba
+  subpackages:
+  - internal
+  - redis
+- name: github.com/hashicorp/raft
+  version: 6d14f0c70869faabd9e60ba7ed88a6cbbd6a661f
+- name: github.com/tidwall/btree
+  version: 9876f1454cf0993a53d74c27196993e345f50dd1
+- name: github.com/tidwall/buntdb
+  version: b67b1b8c1658cb01502801c14e33c61e6c4cbb95
+- name: github.com/tidwall/cast
+  version: 3045c88cf4cdf6f93fe1d4405a458099cf2c8316
+- name: github.com/tidwall/gjson
+  version: ac7b6ae6f2e8e4469803ec0afe946d1f1d90f463
+- name: github.com/tidwall/grect
+  version: ba9a043346eba55344e40d66a5e74cfda3a9d293
+- name: github.com/tidwall/match
+  version: 1731857f09b1f38450e2c12409748407822dc6be
+- name: github.com/tidwall/rtree
+  version: d4a8a3d30d5729f85edfba1745241f3a621d0359
+- name: golang.org/x/net
+  version: 1087133bc4af3073e18add999345c6ae75918503
+  subpackages:
+  - context
+- name: golang.org/x/sys
+  version: 8dbc5d05d6edcc104950cc299a1ce6641235bc86
+  subpackages:
+  - unix
+testImports: []
