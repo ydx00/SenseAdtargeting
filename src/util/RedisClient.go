@@ -6,7 +6,12 @@ import (
 	"fmt"
 	"set"
 	"log"
+	"sync"
 )
+
+var redisInstance *RedisClient = nil
+var redisOnce sync.Once
+
 
 type RedisClient struct {
 	senseARPool     *redis.Pool
@@ -19,37 +24,37 @@ type RedisClient struct {
   redis配置
  */
 const(
-	senseARRedisServer = "10.0.8.81"
-	senseARRedisPort = 6379
-	senseARRedisTimeout = 30
-	senseARRedisPass = ""
-
-	bdpOfflineRedisServer = "10.0.8.81"
-	bdpOfflineRedisPort = 6379
-	bdpOfflineRedisTimeout = 30
-	bdpOfflineRedisPass = ""
-
-	dmRedisServer = "10.0.8.81"
-	dmRedisPort = 6379
-	dmRedisTimeout = 30
-	dmRedisPass = ""
-
-	bdpRealtimeRedisServer = "10.0.8.81"
-	bdpRealtimeRedisPort = 6379
-	bdpRealtimeRedisTimeout = 30
-	bdpRealtimeRedisPass = ""
-
-	//redis配置信息
-	redisMaxTotal= 1024
-	redisMaxIdle=200
-    redisMaxWaitTime=30
-
     //redis连接池标志
 	REDIS_SENSEAR = "SENSEAR"
 	REDIS_BDP_OFFLINE = "BDP_OFFLINE"
 	REDIS_BDP_REALTIME = "BDP_REALTIME"
 	REDIS_DM = "DM"
 )
+
+var senseARRedisServer = NewConfigHelper().ConfigMap["SENSEAR_REDIS_SERVER_HOST"]
+var senseARRedisPort = StringToInt(NewConfigHelper().ConfigMap["SENSEAR_REDIS_SERVER_PORT"])
+var senseARRedisTimeout = StringToInt(NewConfigHelper().ConfigMap["SENSEAR_REDIS_TIMEOUT"])
+var senseARRedisPass = NewConfigHelper().ConfigMap["SENSEAR_REDIS_PASS"]
+
+var bdpOfflineRedisServer = NewConfigHelper().ConfigMap["BDP_OFFLINE_REDIS_SERVER_HOST"]
+var bdpOfflineRedisPort = StringToInt(NewConfigHelper().ConfigMap["BDP_OFFLINE_REDIS_SERVER_PORT"])
+var bdpOfflineRedisTimeout = StringToInt(NewConfigHelper().ConfigMap["BDP_OFFLINE_REDIS_TIMEOUT"])
+var bdpOfflineRedisPass = NewConfigHelper().ConfigMap["BDP_OFFLINE_REDIS_PASS"]
+
+var dmRedisServer = NewConfigHelper().ConfigMap["BDP_REALTIME_REDIS_SERVER_HOST"]
+var dmRedisPort = StringToInt(NewConfigHelper().ConfigMap["BDP_REALTIME_REDIS_SERVER_PORT"])
+var dmRedisTimeout = StringToInt(NewConfigHelper().ConfigMap["BDP_REALTIME_REDIS_TIMEOUT"])
+var dmRedisPass = NewConfigHelper().ConfigMap["BDP_REALTIME_REDIS_PASS"]
+
+var bdpRealtimeRedisServer = NewConfigHelper().ConfigMap["DM_REDIS_SERVER_HOST"]
+var bdpRealtimeRedisPort = StringToInt(NewConfigHelper().ConfigMap["DM_REDIS_SERVER_PORT"])
+var bdpRealtimeRedisTimeout = StringToInt(NewConfigHelper().ConfigMap["DM_REDIS_TIMEOUT"])
+var bdpRealtimeRedisPass = NewConfigHelper().ConfigMap["DM_REDIS_PASS"]
+
+var redisMaxTotal= StringToInt(NewConfigHelper().ConfigMap["REDIS_MAX_TOTAL"])
+var redisMaxIdle=StringToInt(NewConfigHelper().ConfigMap["REDIS_MAX_IDLE"])
+var redisMaxWaitTime=StringToInt(NewConfigHelper().ConfigMap["REDIS_MAX_WAIT_MILLS"])
+
 
 /**
    新建连接池
@@ -58,8 +63,7 @@ func newPool(server string,port int,password string,timeout int) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     redisMaxIdle,
 		MaxActive:   redisMaxTotal,
-		IdleTimeout: redisMaxWaitTime * time.Second,
-
+		IdleTimeout: time.Duration(redisMaxWaitTime) * time.Second,
 
 		Dial: func() (redis.Conn, error) {
 			c, err := redis.Dial("tcp", server + ":" + string(port))
@@ -87,12 +91,15 @@ func newPool(server string,port int,password string,timeout int) *redis.Pool {
    新建redis客户端
  */
 func NewRedisClient() *RedisClient{
-    return &RedisClient{
-    	senseARPool:newPool(senseARRedisServer,senseARRedisPort,senseARRedisPass,senseARRedisTimeout),
-    	bdpOfflinePool:newPool(bdpOfflineRedisServer,bdpOfflineRedisPort,bdpOfflineRedisPass,bdpOfflineRedisTimeout),
-    	bdpRealtimePool:newPool(bdpRealtimeRedisServer,bdpRealtimeRedisPort,bdpRealtimeRedisPass,bdpRealtimeRedisTimeout),
-    	dmPool:newPool(dmRedisServer,dmRedisPort,dmRedisPass,dmRedisTimeout),
-	}
+	 redisOnce.Do(func() {
+		 redisInstance = &RedisClient{
+			 senseARPool:newPool(senseARRedisServer,senseARRedisPort,senseARRedisPass,senseARRedisTimeout),
+			 bdpOfflinePool:newPool(bdpOfflineRedisServer,bdpOfflineRedisPort,bdpOfflineRedisPass,bdpOfflineRedisTimeout),
+			 bdpRealtimePool:newPool(bdpRealtimeRedisServer,bdpRealtimeRedisPort,bdpRealtimeRedisPass,bdpRealtimeRedisTimeout),
+			 dmPool:newPool(dmRedisServer,dmRedisPort,dmRedisPass,dmRedisTimeout),
+		 }
+	 })
+    return redisInstance
 }
 
 /**
@@ -317,7 +324,7 @@ func (client *RedisClient) HGetAll(redisInstance string,dbId int,key string) map
 	return values
 }
 
-func (client *RedisClient) HGetAllAdWithPipeline(dbId int,keys []string) map[string](map[string]string){
+func (client *RedisClient) HGetAllAdWithPipeline(dbId int,keys []string) [](map[string]string){
 	conn := client.GetConnection(REDIS_SENSEAR)
 	defer client.ReturnConn(conn)
 	defer func() {
@@ -336,14 +343,14 @@ func (client *RedisClient) HGetAllAdWithPipeline(dbId int,keys []string) map[str
 	}
 	close(r.stop)
 	<-r.done
-	result := make(map[string](map[string]string))
+	result := make([](map[string]string),0)
 	for i := 0; i < len(keys) ; i++  {
 		key := SARA_KEY_AD_BASEDATA + keys[i]
 		if value,err := redis.StringMap(r.last[i].value,r.last[i].err); err != nil{
-				continue
+			continue
 		}else {
-				result[key] = value
-				(result[key])["advertisement_id"] = key
+			value["advertisement_id"] = key
+			result = append(result,value)
 		}
 	}
 	return result

@@ -2,8 +2,6 @@ package main
 
 import (
 	"util"
-	"log"
-	"fmt"
 )
 
 /**
@@ -17,19 +15,6 @@ const (
 
 
 func main() {
-	client := util.GetBuntDBInstance()
-	if client == nil {
-		log.Fatal("获取数据库失败")
-	}
-	value := make(map[string]string)
-    value["1"] = "2"
-    value["2"] = "3"
-	client.WriteMap("test",value,util.CPM_ADINFO_DB)
-    data,err := client.ReadMap("test",util.CPM_ADINFO_DB)
-	if err != nil {
-		log.Fatal("读取数据失败")
-	}
-	for k,v := range data{
-		fmt.Println(string(k) + v)
-	}
+	confighelp := util.NewConfigHelper()
+	print(confighelp.ConfigMap["SENSEAR_REDIS_SERVER_HOST"])
 }

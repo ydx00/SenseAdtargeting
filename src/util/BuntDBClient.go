@@ -18,11 +18,12 @@ const(
 	CPT_ADSTAT_DB = "CPT_ADSTAT:"
 	PRELOAD_ADINFO_DB = "PRELOAD_ADINFO:"
 	ADMODE_NUM_DB = "ADMODE_NUM:"
-
-	AD_STATIC_INFO_TASK_FRE = 120
-	AD_REALTIME_INFO_TASK_PRE = 5
-	PRE_LOAD_TASK_PRE = 1440
 )
+
+var AD_STATIC_INFO_TASK_FRE = NewConfigHelper().ConfigMap["AD_STATIC_INFO_TASK_FRE"]
+var AD_REALTIME_INFO_TASK_PRE = NewConfigHelper().ConfigMap["AD_REALTIME_INFO_TASK_PRE"]
+var PRE_LOAD_TASK_PRE = NewConfigHelper().ConfigMap["PRE_LOAD_TASK_PRE"]
+
 
 var instance *BuntDBClient = nil
 var once sync.Once

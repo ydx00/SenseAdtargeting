@@ -10,10 +10,12 @@ import (
 	"model"
 	"encoding/json"
 	"strings"
+	"sort"
 )
-const(
-	USE_REDIS = 1
-)
+
+var USE_REDIS = util.StringToInt(util.NewConfigHelper().ConfigMap["USE_REDIS"])
+
+
 func Search(appId string,userId string,broadcasterId string,adMode int,requestId string,version int) string{
     redisclient := util.NewRedisClient()
     buntDBClient := util.GetBuntDBInstance()
@@ -133,10 +135,10 @@ func Search(appId string,userId string,broadcasterId string,adMode int,requestId
 	}else {
 		fansConditions = append(fansConditions,cpmCondition+":-1_-1_-1_-1")
 		//转换粉丝画像信息
-        gender := getStringFromMap(fansInfo,"gender","-1")
-		ageGroup := getStringFromMap(fansInfo,"age_group","-1")
-		area := getStringFromMap(fansInfo,"area","-1")
-		os := getStringFromMap(fansInfo,"os","-1")
+        gender := util.GetStringFromMap(fansInfo,"gender","-1")
+		ageGroup := util.GetStringFromMap(fansInfo,"age_group","-1")
+		area := util.GetStringFromMap(fansInfo,"area","-1")
+		os := util.GetStringFromMap(fansInfo,"os","-1")
 		provinceCode := "-1"
 		cityCode := "-1"
 		if area != "-1" && len(area) == 6 {
@@ -195,7 +197,7 @@ func Search(appId string,userId string,broadcasterId string,adMode int,requestId
 			broadcasterTags := make([]string,0)
 			tag_ids,ok := broadcasterInfo["tag_ids"]
 			if ok {
-               broadcasterTags = stringToListStr(tag_ids)
+               broadcasterTags = util.StringToListStr(tag_ids)
 			}
 			for _,fansCondition := range fansConditions{
 				for _,broadcasterTag := range broadcasterTags{
@@ -234,25 +236,103 @@ func Search(appId string,userId string,broadcasterId string,adMode int,requestId
 		distinctAdIdList = append(distinctAdIdList, string(value))
 	}
 
+    sort.Sort(util.AdArraySort(distinctAdIdList))
+	log.Println("{\"requestId\":"+requestId+",\"info\":\"CPM广告排序时长===="+string(time.Now().UnixNano()/1000-st7)+"\"}")
 
+	st8 := time.Now().UnixNano() / 1000
+	for _,adIdAndSort := range distinctAdIdList{
+		//String adId = adIdAndSort.split("_")[0];
+       adId := strings.Split(adIdAndSort,"_")[0]
 
+       st9 := time.Now().UnixNano() / 1000
 
+       adStatMap := make(map[string]string,0)
+		if USE_REDIS == 1{
+			adStatMap = redisclient.HGetAll(util.REDIS_DM,util.REDIS_DB_DM,util.AD_DM_SENSEAR_AD_REALTIME_CPM+adId)
+		}else {
+			var err error
+			adStatMap,err = buntDBClient.ReadMap(util.AD_DM_SENSEAR_AD_REALTIME_CPM + adId,util.CPM_ADSTAT_DB)
+			if err != nil {
+				log.Fatal("读取内存数据库失败")
+			}
+		}
+		log.Println("{\"requestId\":" + requestId + ",\"info\":\"单条广告查询有效性缓存，用时为：["+string(time.Now().UnixNano()/1000-st9)+"]毫秒\"}")
 
-}
-
-func getStringFromMap(dict map[string]string,key string,default_value string) string{
-	if value,ok := dict[key]; ok {
-		return value
+		if len(adStatMap) != 0 {
+			statusCheck := adStatMap["statusCheck"]
+			balanceCheck := adStatMap["balanceCheck"]
+			inTimeRangesCheck := adStatMap["inTimeRangesCheck"]
+			hourLimitCheck := adStatMap["hourLimitCheck"]
+			if statusCheck == "1" && balanceCheck == "1" && inTimeRangesCheck == "1" && hourLimitCheck == "1"{
+				if checkFrequencyCapping(adIdAndSort,userId,appId) {
+					log.Println("{\"requestId\":" + requestId + ",\"info\":\"校验CPM广告有效性，用时为：["+string(time.Now().UnixNano()/1000-st8)+"]毫秒\"}")
+					log.Println("{\"requestId\":"+requestId+",\"info\":\"return adId===================="+adId+"\"}")
+					overtime := false
+					time := time.Now().UnixNano()/1000 - startTime
+					if time > 100 {
+						overtime = true
+					}
+					dataList := make([]string,0)
+					dataList = append(dataList,appId)
+					res.SetData(dataList)
+					log.Println("{\"requestId\":" + requestId + ",\"info\":\"接口调用结束，用时为：["+string(time)+"]毫秒\",\"overtime\":\""+string(overtime)+"\"}")
+					if version == 0 {
+						return adId
+					}else {
+						return string(json.Marshal(res))
+					}
+				}else {
+					log.Println("{\"requestId\":"+requestId+",\"info\":\"该广告未通过频次控制校验，广告ID为===="+adId+"\"}")
+					continue
+				}
+			}else {
+				log.Println("{\"requestId\":"+requestId+",\"info\":\"该广告未通过有效性校验，广告ID为===="+adId+"\"}")
+				continue
+			}
+		}else {
+			log.Println("{\"requestId\":"+requestId+",\"info\":\"未取到状态缓存，广告ID为===="+adId+"\"}")
+			continue
+		}
+	}
+	log.Println("{\"requestId\":" + requestId + ",\"info\":\"校验CPM广告有效性，全部无效，用时为：["+string(time.Now().UnixNano()/1000-st8)+"]毫秒\"}")
+	overtime := false
+	time := time.Now().UnixNano()/1000 - startTime
+	if time > 100 {
+		overtime = true
+	}
+	log.Println("{\"requestId\":" + requestId + ",\"info\":\"接口调用结束，用时为：["+string(time)+"]毫秒\",\"overtime\":\""+string(overtime)+"\"}")
+    dataList := make([]string,0)
+    res.SetData(dataList)
+	res.SetReason("未取到符合条件的广告")
+	log.Println("{\"requestId\":" + requestId + ",\"info\":\"接口调用结束，用时为：["+string(time)+"]毫秒\",\"overtime\":\""+string(overtime)+"\"}")
+	if version == 0 {
+		return ""
 	}else {
-		return default_value
+		return string(json.Marshal(res))
 	}
 }
 
-func stringToListStr(str string) []string{
-	if str != "" {
-        return strings.Split(str,",")
-	} else{
-		return make([]string,0)
+
+func checkFrequencyCapping(adIdAndSort string, userId string,appId string) bool{
+	redisclient := util.NewRedisClient()
+	adId := strings.Split(adIdAndSort,"_")[0]
+	showTimesLimitStr := strings.Split(adIdAndSort,"_")[2]
+	if showTimesLimitStr == "-1" {
+		return true
+	}else {
+		showTimesLimit := util.StringToInt(strings.Split(adIdAndSort,"_")[2])
+		freqctrlInfo := redisclient.HGetAll(util.REDIS_BDP_REALTIME,util.REDIS_DB_BDP_REALTIME,util.SARA_KEY_USER_AD_SHOW+appId+":"+userId+":"+adId)
+		showTimes := 0
+		if len(freqctrlInfo) == 0 {
+			return true
+		}else {
+			showTimes = util.GetIntValueFromMap(freqctrlInfo,"show_times",-1)
+			if showTimes >= showTimesLimit{
+				return false
+			}
+		}
 	}
+   return true
 }
+
 
