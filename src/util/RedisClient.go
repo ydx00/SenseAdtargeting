@@ -154,8 +154,7 @@ func (client *RedisClient) Add(redisInstance string,dbId int,key string,value st
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
-	_,setx_err := conn.Do("SETEX",key,seconds,value)
-	if setx_err != nil {
+	if _,setx_err := conn.Do("SETEX",key,seconds,value);setx_err != nil{
 		panic(setx_err)
 	}
 }
@@ -172,8 +171,7 @@ func (client *RedisClient) Expire(redisInstance string,dbId int,key string,secon
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
-	_,expire_err := conn.Do("EXPIRE",key,seconds)
-	if expire_err != nil {
+	if _,expire_err := conn.Do("EXPIRE",key,seconds);expire_err != nil{
 		panic(expire_err)
 	}
 }
@@ -189,8 +187,7 @@ func (client *RedisClient) Hmset(redisInstance string,dbId int,key string,dict m
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
-	_,hmset_err := conn.Do("HMSET",dict)
-	if hmset_err != nil {
+	if _,hmset_err := conn.Do("HMSET",redis.Args{}.Add(key).AddFlat(dict)...); hmset_err != nil{
 		panic(hmset_err)
 	}
 }
@@ -206,12 +203,7 @@ func (client *RedisClient) Lset(redisInstance string,dbId int, key string,list [
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
-	args := []interface{}{key}
-	for _,v := range list {
-		args = append(args,v)
-	}
-	_,lset_err := conn.Do("LPUSH",args)
-	if lset_err != nil {
+	if _,lset_err := conn.Do("LPUSH",redis.Args{}.Add(key).AddFlat(list)...); lset_err != nil{
 		panic(lset_err)
 	}
 }

@@ -16,11 +16,7 @@ func (arrSort AdArraySort) Swap(i, j int){
 }
 
 func (arrSort AdArraySort) Less(i, j int) bool{
-	sortA,errA := strconv.ParseFloat(strings.Split(arrSort[i], "_")[1], 32)
-	sortB,errB := strconv.ParseFloat(strings.Split(arrSort[j], "_")[1], 32)
-	if errA != nil && errB != nil{
-		return true
-	}else {
-		return sortA > sortB
-	}
+	sortA := StringToFloat(strings.Split(arrSort[i], "_")[1])
+	sortB := StringToFloat(strings.Split(arrSort[j], "_")[1])
+	return sortA > sortB
 }

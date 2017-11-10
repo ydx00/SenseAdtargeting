@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"strings"
 	"sort"
+	"strconv"
 )
 
 var USE_REDIS = util.StringToInt(util.NewConfigHelper().ConfigMap["USE_REDIS"])
@@ -32,7 +33,7 @@ func Search(appId string,userId string,broadcasterId string,adMode int,requestId
 
 	st1 := time.Now().UnixNano() / 1000
 	fansInfo := redisclient.HGetAll(util.REDIS_BDP_REALTIME,util.REDIS_DB_BDP_REALTIME,util.AD_BDP_SENSEAR_USER_INFO + appId + ":" + userId)
-	log.Println("{\"requestId\":"+requestId+",\"info\":\"取用户画像时长===="+string(time.Now().UnixNano()/1000-st1)+"\"}")
+	log.Println("{\"requestId\":"+requestId+",\"info\":\"取用户画像时长===="+fmt.Sprintf("%d",time.Now().UnixNano()/1000-st1)+"\"}")
 
 	if len(fansInfo) == 0 {
 		log.Println("{\"requestId\":"+requestId+",\"info\":\"未能找到对应的粉丝信息的userId===="+userId+"\"}")
@@ -52,7 +53,7 @@ func Search(appId string,userId string,broadcasterId string,adMode int,requestId
 		fpCPTAds = redisclient.LGetAllTargetAdWithPipeLine(util.REDIS_DB_DM,cptConditions)
 	}else {
         for _,cptCon := range cptConditions.Elements(){
-			eachResult,err := buntDBClient.ReadArr(string(cptCon),util.CPT_ADINFO_DB)
+			eachResult,err := buntDBClient.ReadArr(fmt.Sprintf("%s",cptCon),util.CPT_ADINFO_DB)
 			if err != nil {
 				log.Fatal("查询数据库失败",err)
 			}
@@ -61,11 +62,11 @@ func Search(appId string,userId string,broadcasterId string,adMode int,requestId
 			}
 		}
 	}
-	log.Println("{\"requestId\":"+requestId+",\"info\":\"从存储取CPT广告时长===="+string(time.Now().UnixNano()/1000-st2)+"毫秒\"}")
+	log.Println("{\"requestId\":"+requestId+",\"info\":\"从存储取CPT广告时长===="+fmt.Sprintf("%d",time.Now().UnixNano()/1000-st2)+"毫秒\"}")
 
     st3 := time.Now().UnixNano()/1000
 	if fpCPTAds.Len() > 0{
-		log.Println("{\"requestId\":"+requestId+",\"info\":\"fpCPTAds.size()===="+string(fpCPTAds.Len())+"\"}")
+		log.Println("{\"requestId\":"+requestId+",\"info\":\"fpCPTAds.size()===="+strconv.Itoa(fpCPTAds.Len())+"\"}")
 		availableFpCPTAds := []string{}
 		var adStatMap map[string]string = nil
         for _,adId := range fpCPTAds.Elements(){
