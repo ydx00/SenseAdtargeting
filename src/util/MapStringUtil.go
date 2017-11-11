@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 	"flag"
+	"fmt"
 )
 
 func GetStringFromMap(dict map[string]string,key string,default_value string) string{
@@ -66,3 +67,29 @@ func StringToFloat(str string) float64{
 	return value
 }
 
+func FloatToString(value float64) string{
+	return fmt.Sprintf("%f",value)
+}
+
+func IntToString(value int) string{
+	return fmt.Sprintf("%d",value)
+}
+
+func BoolToString(value bool) string{
+	strconv.FormatBool(value)
+}
+
+func InterfaceToString(value interface{}) string{
+	switch value.(type) {
+	case bool:
+        return BoolToString(value.(bool))
+	case float64:
+		return FloatToString(value.(float64))
+	case int:
+		return IntToString(value.(int))
+	case string:
+		return value.(string)
+	default:
+		return ""
+	}
+}
