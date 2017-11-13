@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"fmt"
 )
 
 var redisclient = util.NewRedisClient()
@@ -14,22 +15,21 @@ var buntDBclient = util.GetBuntDBInstance()
 
 func OfflineAdStaticInfoProcess(){
 	appIdList := GetAllApps()
-	log.Println("adList.size:"+util.IntToString(len(appIdList)))
+	//log.Println("adList.size:"+util.IntToString(len(appIdList)))
 
 	ad_static_task_fre := util.StringToInt(util.NewConfigHelper().ConfigMap["AD_STATIC_INFO_TASK_FRE"])
 
 	for _,appId := range appIdList{
 		adList := GetMediaAllAds(appId)
-
 		if len(adList) == 0 {
 			continue
 		}
+		fmt.Println(len(adList))
 		cpmResult := make(map[string]([]string))
 		cptResult := make(map[string]([]string))
 
 		targetCpmAdvs := make(map[string]([](map[string]string)))
 
-		//defaultAdIdList := make([]string,0)
 		//处理CPT广告
 		cptAdList := make([](map[string]string),0)
 		for _,adver := range adList{
@@ -67,9 +67,12 @@ func OfflineAdStaticInfoProcess(){
 		if USE_REDIS == 1{
 			//redisClient.lsetByPipeline(RedisClient.REDIS_DM,Constant.REDIS_DB_DM,cptResult,task_fre*60);
 			redisclient.LsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,cptResult,ad_static_task_fre*60)
+			log.Println("存入redis成功")
 		}else{
 			for k,v := range cptResult{
 				buntDBclient.WriteArr(k,v,util.CPT_ADINFO_DB)
+				log.Println("存入buntdb成功")
+
 			}
 		}
 
@@ -218,6 +221,7 @@ func OfflineAdStaticInfoProcess(){
 func OfflineAdRealtimeInfoProcess(){
 	appIdList := GetAllApps()
 	realtime_task_fre := util.StringToInt(util.NewConfigHelper().ConfigMap["AD_REALTIME_INFO_TASK_PRE"])
+	log.Println("adList.size:"+util.IntToString(len(appIdList)))
 	for _,appId := range appIdList{
 		adList := GetMediaAllAds(appId)
 		if len(appIdList) == 0 {
@@ -235,7 +239,6 @@ func OfflineAdRealtimeInfoProcess(){
 				cptAdList = append(cptAdList,adver)
 			}
 		}
-
 		for _,adv := range cptAdList{
 			checkMap := make(map[string]string)
 			adId := adv["advertisement_id"]

@@ -14,6 +14,7 @@ func GetMediaAllAds(appId string) [](map[string]string){
 	redisclient := util.NewRedisClient()
 	advertiserAdList := make([](map[string]string),0)
 	advertiserAds := redisclient.LRange(util.REDIS_SENSEAR,util.REDIS_DB_SARA,util.SARA_KEY_AD_POST_DATA+appId,0,-1)
+	fmt.Println(len(advertiserAds))
 	if len(advertiserAds) != 0 {
 		advertiserAdList = GetAdList(advertiserAds)
 	}
@@ -172,9 +173,8 @@ func Sort(adList [](map[string]string)) [](map[string]string){
 	priceMaxFinal := priceMax
 
 	for _,ad := range adList{
-		ad["dailyMaxFinal"] = fmt.Sprintf("%f",dailyMaxFinal)
-		ad["priceMaxFinal"] = fmt.Sprintf("%f",priceMaxFinal)
-
+		ad["dailyMaxFinal"] = util.FloatToString(dailyMaxFinal)
+		ad["priceMaxFinal"] = util.FloatToString(priceMaxFinal)
 	}
 
     sort.Sort(BudgetSort(adList))

@@ -66,23 +66,28 @@ func newPool(server string,port int,password string,timeout int) *redis.Pool {
 		IdleTimeout: time.Duration(redisMaxWaitTime) * time.Second,
 
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", server + ":" + string(port))
+			finalServer := server + ":" + IntToString(port)
+			c, err := redis.Dial("tcp", finalServer)
 			if err != nil {
+				log.Println("failed to connect:",err)
 				return nil, err
 			}
-			if _, err := c.Do("AUTH", password); err != nil {
-				c.Close()
-				return nil, err
+			if password != ""{
+				if _, err := c.Do("AUTH", password); err != nil {
+					log.Println("密码验证失败",err)
+					c.Close()
+					return nil, err
+				}
 			}
-			return c, err
+			    return c, err
 		    },
-
-		   TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			   if time.Since(t).Seconds() < float64(timeout) {
-			   	 return nil
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			   if time.Since(t).Seconds() > float64(timeout) {
+				   fmt.Println("测试连接超时")
+				   return nil
 			   }
 			   _, err := c.Do("PING")
-				return err
+			   return err
 		   },
 		}
 }
@@ -574,7 +579,7 @@ func (client *RedisClient) LRange(redisInstance string,dbId int,key string,start
 		panic(select_err)
 	}
 	if value, err := redis.Strings(conn.Do("LRANGE",key,start,end)); err != nil{
-		log.Fatal(err)
+		panic(err)
 		return nil
 	}else {
 		return value
@@ -592,6 +597,7 @@ func (client *RedisClient) HGetAllApps(dbId int) []string{
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
+
 	if value,err := redis.Strings(conn.Do("LRANGE","SARA_KEY_APP_LIST",0,-1)); err != nil{
 		return nil
 	}else {

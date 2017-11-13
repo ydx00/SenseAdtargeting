@@ -3,7 +3,6 @@ package util
 import (
 	"strconv"
 	"strings"
-	"flag"
 	"fmt"
 	"time"
 )

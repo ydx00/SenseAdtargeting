@@ -150,6 +150,12 @@ func (b *BuntDBClient) set(key string, value []byte,bucket string) error {
 	}
 	return b.db.Update(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(bucket+key, cast.ToString(value), opts)
+		if err == nil {
+			log.Println("存储数据库成功，key:"+bucket+key+",value:"+cast.ToString(value))
+		}else {
+			log.Println("存储数据库失败：",err)
+
+		}
 		return err
 	})
 }
