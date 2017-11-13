@@ -236,7 +236,7 @@ func Search(appId string,userId string,broadcasterId string,adMode int,requestId
 		distinctAdIdList = append(distinctAdIdList, util.InterfaceToString(value))
 	}
 
-    sort.Sort(util.AdArraySort(distinctAdIdList))
+    sort.Sort(AdArraySort(distinctAdIdList))
 	log.Println("{\"requestId\":"+requestId+",\"info\":\"CPM广告排序时长===="+string(time.Now().UnixNano()/1000000-st7)+"\"}")
 
 	st8 := time.Now().UnixNano() / 1000000

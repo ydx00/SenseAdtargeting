@@ -1,8 +1,8 @@
-package util
+package service
 
 import (
 	"strings"
-	"strconv"
+	"util"
 )
 
 type AdArraySort []string
@@ -16,7 +16,7 @@ func (arrSort AdArraySort) Swap(i, j int){
 }
 
 func (arrSort AdArraySort) Less(i, j int) bool{
-	sortA := StringToFloat(strings.Split(arrSort[i], "_")[1])
-	sortB := StringToFloat(strings.Split(arrSort[j], "_")[1])
+	sortA := util.StringToFloat(strings.Split(arrSort[i], "_")[1])
+	sortB := util.StringToFloat(strings.Split(arrSort[j], "_")[1])
 	return sortA > sortB
 }

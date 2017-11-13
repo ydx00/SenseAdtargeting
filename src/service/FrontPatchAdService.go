@@ -177,7 +177,7 @@ func Sort(adList [](map[string]string)) [](map[string]string){
 
 	}
 
-    sort.Sort(util.BudgetSort(adList))
+    sort.Sort(BudgetSort(adList))
     return adList
 }
 
