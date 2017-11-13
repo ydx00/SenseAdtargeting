@@ -1,5 +1,10 @@
 package model
 
+import (
+	"encoding/json"
+	"github.com/tidwall/cast"
+)
+
 type ResponseModel struct {
 	data []string
 	reason string
@@ -40,4 +45,12 @@ func NewResponseModelWithArgs(data []string,reason string,requestId string) *Res
 		reason:reason,
 		requestId:requestId,
 	}
+}
+
+func ModelToString(model ResponseModel) string{
+	result,err := json.Marshal(model)
+	if err != nil {
+		panic(err)
+	}
+	return cast.ToString(result)
 }

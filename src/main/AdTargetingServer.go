@@ -1,7 +1,7 @@
 package main
 
 import (
-	"util"
+	"service"
 )
 
 /**
@@ -15,6 +15,6 @@ const (
 
 
 func main() {
-	confighelp := util.NewConfigHelper()
-	print(confighelp.ConfigMap["SENSEAR_REDIS_SERVER_HOST"])
+  service.OfflineAdRealtimeInfoProcess()
+  service.OfflineAdStaticInfoProcess()
 }

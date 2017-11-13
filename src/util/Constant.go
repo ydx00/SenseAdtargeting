@@ -95,3 +95,10 @@ const(
     ADMODE_NUM = 6
 
 )
+
+
+const (
+    ADVERTISER  = 1
+    MEDIA  = 2
+    INTEREST  = 3
+)

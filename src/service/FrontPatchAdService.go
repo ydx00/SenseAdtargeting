@@ -5,8 +5,8 @@ import (
 	"time"
 	"log"
 	"sort"
-	"strconv"
 	"fmt"
+	"strings"
 )
 
 
@@ -78,8 +78,8 @@ func AddAdExInfo(adList [](map[string]string)){
 				dailyLimit := util.GetDoubleValueFromMap(adPlanMap,"daily_limit",0.0)
 				dailyCost := util.GetDoubleValueFromMap(adPlanCostMap,"day_cost",0.0)
 				available := dailyLimit - dailyCost
-				adExInfoNew["available"] = string(available)
-				adExInfoNew["daily_limit"] = string(dailyLimit)
+				adExInfoNew["available"] = util.FloatToString(available)
+				adExInfoNew["daily_limit"] = util.FloatToString(dailyLimit)
 
 				if available > 0 && dailyLimit != 0 {
 					 dailyMin = available
@@ -89,8 +89,8 @@ func AddAdExInfo(adList [](map[string]string)){
 				totalLimit := util.GetDoubleValueFromMap(adPlanMap,"total_limit",0.0)
 				totalCost := util.GetDoubleValueFromMap(adPlanCostMap,"total_cost",0.0)
 				totalAvailable := totalLimit - totalCost
-				adExInfoNew["total_available"] = string(totalAvailable)
-				adExInfoNew["total_limit"] = string(totalLimit)
+				adExInfoNew["total_available"] = util.FloatToString(totalAvailable)
+				adExInfoNew["total_limit"] = util.FloatToString(totalLimit)
 
 				if totalAvailable > 0 && totalLimit != 0 && dailyMin > totalAvailable{
 					dailyMin = totalAvailable
@@ -103,13 +103,13 @@ func AddAdExInfo(adList [](map[string]string)){
 					amount := util.GetDoubleValueFromMap(advertiserInfoMap,"total_amount",0.0)
 					cost := util.GetDoubleValueFromMap(advertiserCostInfoMap,"total_cost",0.0)
 					availableBalance := amount - cost
-					adExInfoNew["available_balance"] = string(availableBalance)
+					adExInfoNew["available_balance"] = util.FloatToString(availableBalance)
 
 					if dailyMin == 0.0 || dailyMin > availableBalance {
 						dailyMin = availableBalance
 					}
 				}
-				adExInfoNew["daily_min"] = string(dailyMin)
+				adExInfoNew["daily_min"] = util.FloatToString(dailyMin)
 
 				for k,v := range adExInfoNew{
 					adInfo[k] = v
@@ -138,14 +138,14 @@ func GetSortX(adInfo map[string]string,dailyMax float64,priceMax float64) float6
 	endDate := util.GetIntValueFromMap(adInfo, "end_date", 0)
 	timeX := 0.0
 
-	nowMills := time.Now().UnixNano() / 1000
+	nowMills := time.Now().UnixNano() / 1000000
 	if endDate != 0 && int64(endDate) < nowMills{
 		timeX = 1.0
 	}
 
 	x := timeX * 0.3 + dailyN * 0.3 + priceN *4
 
-	log.Println("{\"in sort ：x:  \":"+string(x)+"}")
+	log.Println("{\"in sort ：x:  \":"+util.FloatToString(x)+"}")
 
 	adInfo["sort"] = fmt.Sprintf("%f",x)
 
@@ -179,4 +179,89 @@ func Sort(adList [](map[string]string)) [](map[string]string){
 
     sort.Sort(util.BudgetSort(adList))
     return adList
+}
+
+func CheckHourLimit(ad map[string]string, appId string) bool{
+	checkHourTime := time.Now().UnixNano() / 1000000
+	flag := true
+
+	adId := ad["advertisement_id"]
+	planPostMethod := util.StringToInt(ad["plan_post_method"])
+
+	log.Println("{\"in checkHourLimit plan_post_method\":"+util.IntToString(planPostMethod)+"}")
+
+	if planPostMethod == 2 {
+		log.Println("{\"检查匀速投放用时\":"+util.Int64ToSting(time.Now().UnixNano()/1000000-checkHourTime)+"毫秒}")
+        return flag
+	}
+
+	hourRatioStr := redisclient.Get(util.REDIS_BDP_OFFLINE, util.REDIS_DB_BDP_OFFLINE, util.AD_BDP_SENSEAR_HOUR_RATIO+adId)
+	if hourRatioStr == "" {
+		hourRatioStr = util.NewConfigHelper().ConfigMap["hour_proportion"]
+	}
+
+	hourRatio := strings.Split(hourRatioStr, ",")
+	adTimeranges := ad["timeranges"]
+
+	nowHour := time.Now().Hour()
+
+	var hourLimitRate = 0.0
+	if "-1" == adTimeranges {
+		hourLimitRate = util.StringToFloat(hourRatio[nowHour])
+	}else {
+		adTimeranges = strings.Replace(adTimeranges,"[","",-1)
+		adTimeranges = strings.Replace(adTimeranges,"]","",-1)
+		hourRange := strings.Split(adTimeranges,"-")
+		startHour := util.StringToInt(hourRange[0][0:2])
+		endHour := util.StringToInt(hourRange[1][0:2])-1
+
+		allHourRatio := 0.0
+		if startHour == endHour {
+			allHourRatio = util.StringToFloat(hourRatio[startHour])
+		}else {
+			for i := startHour; i <= endHour; i++  {
+				allHourRatio += util.StringToFloat(hourRatio[i])
+			}
+		}
+
+		if allHourRatio == 0{
+			hourLimitRate = 0.0
+		}else {
+			hourLimitRate = util.StringToFloat(hourRatio[nowHour]) / allHourRatio
+		}
+	}
+
+	log.Println("{\"in checkHourLimit hourLimitRate\":"+util.FloatToString(hourLimitRate)+"}")
+	price := util.StringToFloat(ad["actual_price"])
+
+	dailyMin := 0.0
+	daily_min := ad["daily_min"]
+
+	if daily_min != ""{
+		 dailyMin = util.StringToFloat(daily_min)
+	}
+
+	dailyShowTimesLimit := (dailyMin/price) * 1000
+	hourShowTimesLimit := int64(dailyShowTimesLimit * hourLimitRate)
+
+	log.Println("{\"in checkHourLimit hourShowTimesLimit\":"+util.Int64ToSting(hourShowTimesLimit)+"}")
+
+	adStatisticsData := redisclient.HGetAll(util.REDIS_BDP_REALTIME, util.REDIS_DB_BDP_REALTIME,util.SARA_KEY_AD_STATISTICS_DATA + adId)
+
+	hourShowTimes := util.GetInt64ValueFromMap(adStatisticsData, "hour_exposure_times", 0)
+	hourUpdateTime := util.GetInt64ValueFromMap(adStatisticsData, "hour_update_time", 0)
+
+	hourUpdateTimeHour := time.Unix(0, hourUpdateTime).Hour()
+
+	if nowHour > hourUpdateTimeHour {
+		hourShowTimes = 0
+	}
+	log.Println("{\"in checkHourLimit hourShowTimes\":"+util.Int64ToSting(hourShowTimes)+"}")
+
+	if hourShowTimes > hourShowTimesLimit {
+		flag = false
+	}
+
+	log.Println("{\"匀速投放用时\":"+util.Int64ToSting(time.Now().UnixNano()/1000000-checkHourTime)+"毫秒}")
+    return flag
 }

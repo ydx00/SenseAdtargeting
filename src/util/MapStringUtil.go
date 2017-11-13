@@ -5,6 +5,7 @@ import (
 	"strings"
 	"flag"
 	"fmt"
+	"time"
 )
 
 func GetStringFromMap(dict map[string]string,key string,default_value string) string{
@@ -20,6 +21,13 @@ func GetIntValueFromMap(dict map[string]string,key string,default_value int) int
 		if result,err  := strconv.Atoi(value); err == nil{
 			return result
 		}
+	}
+	return default_value
+}
+
+func GetInt64ValueFromMap(dict map[string]string, key string, default_value int64) int64{
+	if value,ok := dict[key]; ok {
+		return StringtoInt64(value)
 	}
 	return default_value
 }
@@ -51,8 +59,24 @@ func StringToListInt(str string) []int{
 	return result
 }
 
+func StringToDuration(str string) time.Duration{
+	duration,err := time.ParseDuration(str)
+	if err != nil {
+		panic(err)
+	}
+	return duration
+}
+
 func StringToInt(str string) int{
 	value,err := strconv.Atoi(str)
+	if err != nil {
+		panic(err)
+	}
+	return value
+}
+
+func StringtoInt64(str string) int64{
+	value, err := strconv.ParseInt(str, 10, 64)
 	if err != nil {
 		panic(err)
 	}
@@ -75,8 +99,12 @@ func IntToString(value int) string{
 	return fmt.Sprintf("%d",value)
 }
 
+func Int64ToSting(value int64) string{
+	return fmt.Sprintf("%d",value)
+}
+
 func BoolToString(value bool) string{
-	strconv.FormatBool(value)
+	return strconv.FormatBool(value)
 }
 
 func InterfaceToString(value interface{}) string{
@@ -89,6 +117,8 @@ func InterfaceToString(value interface{}) string{
 		return IntToString(value.(int))
 	case string:
 		return value.(string)
+	case int64:
+		return Int64ToSting(value.(int64))
 	default:
 		return ""
 	}

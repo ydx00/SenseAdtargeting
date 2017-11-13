@@ -136,17 +136,17 @@ func (b *BuntDBClient) set(key string, value []byte,bucket string) error {
 	opts := &buntdb.SetOptions{Expires:true}
 	switch bucket {
 	case CPM_ADINFO_DB:
-        opts.TTL = time.Duration(AD_STATIC_INFO_TASK_FRE) * time.Minute
+        opts.TTL = StringToDuration(AD_STATIC_INFO_TASK_FRE) * time.Minute
 	case CPM_ADSTAT_DB:
-		opts.TTL = time.Duration(AD_REALTIME_INFO_TASK_PRE) * time.Minute
+		opts.TTL = StringToDuration(AD_REALTIME_INFO_TASK_PRE) * time.Minute
 	case CPT_ADINFO_DB:
-		opts.TTL = time.Duration(AD_STATIC_INFO_TASK_FRE) * time.Minute
+		opts.TTL = StringToDuration(AD_STATIC_INFO_TASK_FRE) * time.Minute
 	case CPT_ADSTAT_DB:
-		opts.TTL = time.Duration(AD_REALTIME_INFO_TASK_PRE) * time.Minute
+		opts.TTL = StringToDuration(AD_REALTIME_INFO_TASK_PRE) * time.Minute
 	case PRELOAD_ADINFO_DB:
-		opts.TTL = time.Duration(PRE_LOAD_TASK_PRE) * time.Minute
+		opts.TTL = StringToDuration(PRE_LOAD_TASK_PRE) * time.Minute
 	case ADMODE_NUM_DB:
-		opts.TTL = time.Duration(AD_STATIC_INFO_TASK_FRE) * time.Minute
+		opts.TTL = StringToDuration(AD_STATIC_INFO_TASK_FRE) * time.Minute
 	}
 	return b.db.Update(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(bucket+key, cast.ToString(value), opts)
