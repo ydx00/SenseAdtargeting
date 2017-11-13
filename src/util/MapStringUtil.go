@@ -59,10 +59,7 @@ func StringToListInt(str string) []int{
 }
 
 func StringToDuration(str string) time.Duration{
-	duration,err := time.ParseDuration(str)
-	if err != nil {
-		panic(err)
-	}
+	duration := time.Duration(StringtoInt64(str))
 	return duration
 }
 

@@ -15,7 +15,7 @@ var buntDBclient = util.GetBuntDBInstance()
 
 func OfflineAdStaticInfoProcess(){
 	appIdList := GetAllApps()
-	//log.Println("adList.size:"+util.IntToString(len(appIdList)))
+	log.Println("adList.size:"+util.IntToString(len(appIdList)))
 
 	ad_static_task_fre := util.StringToInt(util.NewConfigHelper().ConfigMap["AD_STATIC_INFO_TASK_FRE"])
 
@@ -24,7 +24,7 @@ func OfflineAdStaticInfoProcess(){
 		if len(adList) == 0 {
 			continue
 		}
-		fmt.Println(len(adList))
+		fmt.Println("adList的长度:",len(adList))
 		cpmResult := make(map[string]([]string))
 		cptResult := make(map[string]([]string))
 
