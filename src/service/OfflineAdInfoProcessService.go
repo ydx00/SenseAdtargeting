@@ -15,16 +15,18 @@ var buntDBclient = util.GetBuntDBInstance()
 
 func OfflineAdStaticInfoProcess(){
 	appIdList := GetAllApps()
-	log.Println("adList.size:"+util.IntToString(len(appIdList)))
+	log.Println("adList.size:"+util.IntToString(appIdList.Len()))
 
 	ad_static_task_fre := util.StringToInt(util.NewConfigHelper().ConfigMap["AD_STATIC_INFO_TASK_FRE"])
-
-	for _,appId := range appIdList{
+	for _,appid := range appIdList.Elements(){
+		appId := util.InterfaceToString(appid)
 		adList := GetMediaAllAds(appId)
+		fmt.Println(len(adList))
 		if len(adList) == 0 {
 			continue
 		}
-		fmt.Println("adList的长度:",len(adList))
+		fmt.Println(adList)
+		//fmt.Println("adList的长度:",len(adList))
 		cpmResult := make(map[string]([]string))
 		cptResult := make(map[string]([]string))
 
@@ -71,7 +73,7 @@ func OfflineAdStaticInfoProcess(){
 		}else{
 			for k,v := range cptResult{
 				buntDBclient.WriteArr(k,v,util.CPT_ADINFO_DB)
-				log.Println("存入buntdb成功")
+				log.Println("存入buntdb数据库成功")
 
 			}
 		}
@@ -221,10 +223,11 @@ func OfflineAdStaticInfoProcess(){
 func OfflineAdRealtimeInfoProcess(){
 	appIdList := GetAllApps()
 	realtime_task_fre := util.StringToInt(util.NewConfigHelper().ConfigMap["AD_REALTIME_INFO_TASK_PRE"])
-	log.Println("adList.size:"+util.IntToString(len(appIdList)))
-	for _,appId := range appIdList{
+	log.Println("adList.size:"+util.IntToString(appIdList.Len()))
+	for _,appid := range appIdList.Elements(){
+		appId := util.InterfaceToString(appid)
 		adList := GetMediaAllAds(appId)
-		if len(appIdList) == 0 {
+		if len(adList) == 0 {
 			continue
 		}
 		cpmResult := make(map[string](map[string]string))
