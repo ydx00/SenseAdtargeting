@@ -7,7 +7,6 @@ import (
 	"github.com/buger/jsonparser"
 	"strconv"
 	"strings"
-	"fmt"
 )
 
 var buntDBclient = util.GetBuntDBInstance()
@@ -67,10 +66,6 @@ func OfflineAdStaticInfoProcess(){
 			}
 		}
 
-		if len(cptResult) > 0 {
-			fmt.Print("cptResult:")
-			fmt.Println(cptResult)
-		}
 		if USE_REDIS == 1{
 			redisClient.LsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,cptResult,ad_static_task_fre*60)
 		}else{
@@ -170,14 +165,9 @@ func OfflineAdStaticInfoProcess(){
 			}
 			cpmResult[targetKey] = adIdList
 		}
-		if len(cpmResult) > 0 {
-			fmt.Print("cpmResult:")
-			fmt.Println(cpmResult)
-		}
 		if USE_REDIS == 1{
 			redisClient.LsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,cpmResult,ad_static_task_fre*60)
 		}else {
-			fmt.Println(len(cpmResult))
 			for k,v := range cpmResult{
             	buntDBclient.WriteArr(k,v,util.CPM_ADINFO_DB)
 			}

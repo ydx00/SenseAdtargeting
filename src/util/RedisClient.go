@@ -3,7 +3,6 @@ package util
 import (
 	"github.com/garyburd/redigo/redis"
 	"time"
-	"fmt"
 	"set"
 	"log"
 	"sync"
@@ -83,7 +82,7 @@ func newPool(server string,port int,password string,timeout int) *redis.Pool {
 		    },
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
 			   if time.Since(t).Seconds() > float64(timeout) {
-				   fmt.Println("测试连接超时")
+				   log.Println("测试连接超时")
 				   return nil
 			   }
 			   _, err := c.Do("PING")
@@ -115,7 +114,7 @@ func (client *RedisClient) ReturnConn(conn redis.Conn){
 	if conn != nil {
        err := conn.Close()
 		if err != nil {
-			fmt.Errorf("redis连接归还失败",err)
+			log.Fatal("redis连接归还失败",err)
 		}
 	}
 }
@@ -145,7 +144,7 @@ func (client *RedisClient) Expire(redisInstance string,dbId int,key string,secon
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -161,7 +160,7 @@ func (client *RedisClient) Hmset(redisInstance string,dbId int,key string,dict m
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -178,14 +177,14 @@ func (client *RedisClient) LsetByPipeline(redisInstance string,dbId int,resultMa
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Fatal(err)
 		}
 	}()
 	if _,err := conn.Do("SELECT",dbId);err != nil {
 		panic(err)
 	}
 	for key,value := range resultMap{
-		fmt.Println(key,value)
+		log.Println(key,value)
 		pushArgs := redis.Args{}.Add(key).AddFlat(value)
 		conn.Send("LPUSH",pushArgs...)
 		if expireTime > 0{
@@ -206,7 +205,7 @@ func (client *RedisClient) HmsetByPipeline(redisInstance string,dbId int,resultM
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,err := conn.Do("SELECT",dbId);err != nil {
@@ -233,7 +232,7 @@ func (client *RedisClient) LGetAllTargetAdWithPipeLine(dbId int,keys set.Set) se
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,err := conn.Do("SELECT",dbId); err != nil {
@@ -270,7 +269,7 @@ func (client *RedisClient) Get(redisInstance string,dbId int,key string) string{
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,err := conn.Do("SELECT",dbId); err != nil {
@@ -288,7 +287,7 @@ func (client *RedisClient) HGetAll(redisInstance string,dbId int,key string) map
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -306,7 +305,7 @@ func (client *RedisClient) HGetAllAdWithPipeline(dbId int,keys []string) [](map[
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -326,7 +325,6 @@ func (client *RedisClient) HGetAllAdWithPipeline(dbId int,keys []string) [](map[
 		panic(err)
 	}else {
 		for i,value := range pipe_prox.([]interface{}){
-			//key := SARA_KEY_AD_BASEDATA + keys[i]
 			if res,err := redis.StringMap(value,nil); err != nil{
 				panic(err)
 			}else {
@@ -343,7 +341,7 @@ func (client *RedisClient) HGetAllAdExInfoWhithPipeline(dbId int,keys []string) 
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -379,7 +377,7 @@ func (client *RedisClient) HGetAllAdPlanWhithPipeline(dbId int,keys map[string]s
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -419,7 +417,7 @@ func (client *RedisClient) HGetAllAdvertiserInfoWhithPipeline(dbId int,keys map[
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -459,7 +457,7 @@ func (client *RedisClient) HGetAllAdPlanCostWhithPipeline(dbId int,keys map[stri
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -499,7 +497,7 @@ func (client *RedisClient) HGetAllAdvertiserCostInfoWhithPipeline(dbId int,keys 
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -539,7 +537,7 @@ func (client *RedisClient) HGetAllBroadcasterTagsWhithPipeline(dbId int,appId st
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,err := conn.Do("SELECT",dbId);err != nil {
@@ -569,7 +567,7 @@ func (client *RedisClient) HGetAllUserCoverageWhithPipeline(dbId int,appId strin
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -594,7 +592,7 @@ func (client *RedisClient) LRange(redisInstance string,dbId int,key string,start
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
@@ -612,7 +610,7 @@ func (client *RedisClient) HGetAllApps(dbId int) set.Set{
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
+			log.Println(err)
 		}
 	}()
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {

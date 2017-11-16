@@ -3,8 +3,8 @@ package util
 import (
 	"strconv"
 	"strings"
-	"fmt"
 	"time"
+	"fmt"
 )
 
 func GetStringFromMap(dict map[string]string,key string,default_value string) string{
@@ -103,9 +103,6 @@ func BoolToString(value bool) string{
 	return strconv.FormatBool(value)
 }
 
-func ByteToString(value []byte) string{
-	return string(value[:])
-}
 
 func InterfaceToString(value interface{}) string{
 	switch value.(type) {
@@ -115,10 +112,10 @@ func InterfaceToString(value interface{}) string{
 		return FloatToString(value.(float64))
 	case int:
 		return IntToString(value.(int))
-	case string:
-		return value.(string)
 	case int64:
 		return Int64ToSting(value.(int64))
+	case string:
+		return value.(string)
 	default:
 		return ""
 	}

@@ -5,7 +5,7 @@ import (
 	"service"
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"log"
-	"thrift_service/thrift_service"
+	"thrift_service"
 	"github.com/robfig/cron"
 )
 
@@ -56,8 +56,4 @@ func main() {
 	})
 	cronTask.Start()
 	startServer()
-	//requestNum := rand.Intn(100)
-	//requestId := util.Int64ToSting(time.Now().UnixNano()/1000000) + "_" + util.IntToString(requestNum)
-	//r1:= service.AdSearch("app","fans1","broadcaster1",2,requestId,1)
-	//log.Println(r1)
 }

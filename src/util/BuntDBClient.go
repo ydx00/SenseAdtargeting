@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"strconv"
-	"fmt"
 )
 const(
 	DBPATH = "BuntDB.dat"
@@ -152,9 +151,9 @@ func (b *BuntDBClient) set(key string, value []byte,bucket string) error {
 	return b.db.Update(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(bucket+key, cast.ToString(value), opts)
 		if err == nil {
-			fmt.Println("存储数据库成功，key:"+bucket+key+",value:"+cast.ToString(value))
+			log.Println("存储数据库成功，key:"+bucket+key+",value:"+cast.ToString(value))
 		}else {
-			fmt.Println("存储数据库失败：",err)
+			log.Println("存储数据库失败：",err)
 		}
 		return err
 	})
