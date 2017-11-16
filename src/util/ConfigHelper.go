@@ -51,7 +51,7 @@ func InitConfig(path string)(c *ConfigHelper) {
 
 func NewConfigHelper() *ConfigHelper{
 	ConfigOnce.Do(func() {
-		ConfigHelperInstance = InitConfig("src/resources/adtarget.properties")
+		ConfigHelperInstance = InitConfig("src/resources/ad_target.properties")
 	})
 	return ConfigHelperInstance
 }

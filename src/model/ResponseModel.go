@@ -2,37 +2,37 @@ package model
 
 import (
 	"encoding/json"
-	"github.com/tidwall/cast"
 )
 
+//easyjson:json
 type ResponseModel struct {
-	data []string
-	reason string
-	requestId string
+	Data []string   `json:"data"`
+	Reason string   `json:"reason"`
+	RequestId string  `json:"request_id"`
 }
 
 func (model *ResponseModel) SetData(data []string){
-	model.data = data
+	model.Data = data
 }
 
 func (model *ResponseModel) SetReason(reason string){
-	model.reason = reason
+	model.Reason = reason
 }
 
 func (model *ResponseModel) SetRequestId(requestId string){
-	model.requestId = requestId
+	model.RequestId = requestId
 }
 
 func (model *ResponseModel) GetData() []string{
-	return model.data
+	return model.Data
 }
 
 func (model *ResponseModel) GetReason() string{
-	return model.reason
+	return model.Reason
 }
 
 func (model *ResponseModel) GetRequest() string{
-	return model.requestId
+	return model.RequestId
 }
 
 func NewResponseModel() *ResponseModel{
@@ -41,16 +41,16 @@ func NewResponseModel() *ResponseModel{
 
 func NewResponseModelWithArgs(data []string,reason string,requestId string) *ResponseModel{
 	return &ResponseModel{
-		data:data,
-		reason:reason,
-		requestId:requestId,
+		Data:data,
+		Reason:reason,
+		RequestId:requestId,
 	}
 }
 
-func ModelToString(model ResponseModel) string{
+func (model *ResponseModel) ToString() string{
 	result,err := json.Marshal(model)
 	if err != nil {
 		panic(err)
 	}
-	return cast.ToString(result)
+	return string(result)
 }

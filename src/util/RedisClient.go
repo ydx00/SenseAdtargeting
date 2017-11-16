@@ -140,31 +140,6 @@ func (client *RedisClient) GetConnection(redisInstance string) (conn redis.Conn)
 	return conn
 }
 
-/**
-	* 向 redis 数据库添加值（带超时设置）
-	* @param dbId
-	* @param key
-	* @param value
-	* @return 是否成功
-	*/
-func (client *RedisClient) Add(redisInstance string,dbId int,key string,value string,seconds int){
-	conn := client.GetConnection(redisInstance)
-	defer client.ReturnConn(conn)
-	defer func() {
-		if err := recover(); err != nil {
-			//fmt.Fprintln(string(err))
-			fmt.Errorf("出错了",err)
-		}
-	}()
-	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
-		panic(select_err)
-	}
-	if _,setx_err := conn.Do("SETEX",key,seconds,value);setx_err != nil{
-		panic(setx_err)
-	}
-}
-
-
 func (client *RedisClient) Expire(redisInstance string,dbId int,key string,seconds int){
 	conn := client.GetConnection(redisInstance)
 	defer client.ReturnConn(conn)
@@ -197,21 +172,6 @@ func (client *RedisClient) Hmset(redisInstance string,dbId int,key string,dict m
 	}
 }
 
-func (client *RedisClient) Lset(redisInstance string,dbId int, key string,list []string){
-	conn := client.GetConnection(redisInstance)
-	defer client.ReturnConn(conn)
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Errorf("出错了",err)
-		}
-	}()
-	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
-		panic(select_err)
-	}
-	if _,lset_err := conn.Do("LPUSH",redis.Args{}.Add(key).AddFlat(list)...); lset_err != nil{
-		panic(lset_err)
-	}
-}
 
 func (client *RedisClient) LsetByPipeline(redisInstance string,dbId int,resultMap map[string]([]string),expireTime int){
 	conn := client.GetConnection(redisInstance)
@@ -221,8 +181,8 @@ func (client *RedisClient) LsetByPipeline(redisInstance string,dbId int,resultMa
 			fmt.Errorf("出错了",err)
 		}
 	}()
-	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
-		panic(select_err)
+	if _,err := conn.Do("SELECT",dbId);err != nil {
+		panic(err)
 	}
 	for key,value := range resultMap{
 		fmt.Println(key,value)
@@ -239,7 +199,6 @@ func (client *RedisClient) LsetByPipeline(redisInstance string,dbId int,resultMa
 	if _,err := conn.Receive(); err != nil {
 		panic(err)
 	}
-
 }
 
 func (client *RedisClient) HmsetByPipeline(redisInstance string,dbId int,resultMap map[string](map[string]string),expireTime int){
@@ -250,8 +209,8 @@ func (client *RedisClient) HmsetByPipeline(redisInstance string,dbId int,resultM
 			fmt.Errorf("出错了",err)
 		}
 	}()
-	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
-		panic(select_err)
+	if _,err := conn.Do("SELECT",dbId);err != nil {
+		panic(err)
 	}
     for key,value := range resultMap{
 		args := redis.Args{}.Add(key).AddFlat(value)
@@ -277,8 +236,8 @@ func (client *RedisClient) LGetAllTargetAdWithPipeLine(dbId int,keys set.Set) se
 			fmt.Errorf("出错了",err)
 		}
 	}()
-	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
-		panic(select_err)
+	if _,err := conn.Do("SELECT",dbId); err != nil {
+		panic(err)
 	}
     result := set.NewSimpleSet()
 	conn.Send("MULTI")
@@ -314,15 +273,14 @@ func (client *RedisClient) Get(redisInstance string,dbId int,key string) string{
 			fmt.Errorf("出错了",err)
 		}
 	}()
-	if _,select_err := conn.Do("SELECT",dbId); select_err != nil {
-		panic(select_err)
-	}
-	value,err := redis.String(conn.Do("GET",key))
-
-	if err != nil {
+	if _,err := conn.Do("SELECT",dbId); err != nil {
 		panic(err)
 	}
-	return value
+	if value,err := redis.String(conn.Do("GET",key)); err != nil{
+		panic(err)
+	}else {
+		return value
+	}
 }
 
 func (client *RedisClient) HGetAll(redisInstance string,dbId int,key string) map[string]string{
@@ -336,11 +294,11 @@ func (client *RedisClient) HGetAll(redisInstance string,dbId int,key string) map
 	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
 		panic(select_err)
 	}
-	values,err := redis.StringMap(conn.Do("HGETALL",key))
-	if err != nil {
+	if values,err := redis.StringMap(conn.Do("HGETALL",key)); err != nil{
 		panic(err)
+	}else {
+		return values
 	}
-	return values
 }
 
 func (client *RedisClient) HGetAllAdWithPipeline(dbId int,keys []string) [](map[string]string){
@@ -368,11 +326,11 @@ func (client *RedisClient) HGetAllAdWithPipeline(dbId int,keys []string) [](map[
 		panic(err)
 	}else {
 		for i,value := range pipe_prox.([]interface{}){
-			key := SARA_KEY_AD_BASEDATA + keys[i]
+			//key := SARA_KEY_AD_BASEDATA + keys[i]
 			if res,err := redis.StringMap(value,nil); err != nil{
 				panic(err)
 			}else {
-				res["advertisement_id"] = key
+				res["advertisement_id"] = keys[i]
 				result = append(result,res)
 			}
 		}
@@ -578,15 +536,14 @@ func (client *RedisClient) HGetAllAdvertiserCostInfoWhithPipeline(dbId int,keys 
 
 func (client *RedisClient) HGetAllBroadcasterTagsWhithPipeline(dbId int,appId string) map[string]string{
 	conn := client.GetConnection(REDIS_SENSEAR)
-	//conn := client.GetConnection(REDIS_DM)
 	defer client.ReturnConn(conn)
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Errorf("出错了",err)
 		}
 	}()
-	if _,select_err := conn.Do("SELECT",dbId);select_err != nil {
-		panic(select_err)
+	if _,err := conn.Do("SELECT",dbId);err != nil {
+		panic(err)
 	}
 	key := SARA_KEY_USER_TAGS + appId
 	conn.Send("HGETALL",key)

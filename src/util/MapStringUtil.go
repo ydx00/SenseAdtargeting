@@ -103,6 +103,10 @@ func BoolToString(value bool) string{
 	return strconv.FormatBool(value)
 }
 
+func ByteToString(value []byte) string{
+	return string(value[:])
+}
+
 func InterfaceToString(value interface{}) string{
 	switch value.(type) {
 	case bool:

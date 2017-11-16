@@ -4,31 +4,30 @@ import (
 	"util"
 	"time"
 	"log"
-	"sort"
-	"fmt"
 	"strings"
 	"set"
+	"sort"
 )
 
+var redisClient = util.NewRedisClient()
 
 func GetMediaAllAds(appId string) [](map[string]string){
 	advertiserAdList := make([](map[string]string),0)
-	advertiserAds := redisclient.LRange(util.REDIS_SENSEAR,util.REDIS_DB_SARA,util.SARA_KEY_AD_POST_DATA+appId,0,-1)
+	advertiserAds := redisClient.LRange(util.REDIS_SENSEAR,util.REDIS_DB_SARA,util.SARA_KEY_AD_POST_DATA+appId,0,-1)
 	if len(advertiserAds) > 0 {
 		advertiserAdList = GetAdList(advertiserAds)
-		//fmt.Println(len(advertiserAdList))
 	}
 	return advertiserAdList
 }
 
 
 func GetAdList(adIdList []string) [](map[string]string){
-	return redisclient.HGetAllAdWithPipeline(util.REDIS_DB_SARA,adIdList)
+	return redisClient.HGetAllAdWithPipeline(util.REDIS_DB_SARA,adIdList)
 }
 
 
 func GetAllApps() set.Set{
-	return redisclient.HGetAllApps(util.REDIS_DB_SARA)
+	return redisClient.HGetAllApps(util.REDIS_DB_SARA)
 }
 
 
@@ -43,7 +42,7 @@ func AddAdExInfo(adList [](map[string]string)){
 		adIdList = append(adIdList,adInfo["advertisement_id"])
 	}
 
-	adExInfoMap := redisclient.HGetAllAdExInfoWhithPipeline(util.REDIS_DB_DM,adIdList)
+	adExInfoMap := redisClient.HGetAllAdExInfoWhithPipeline(util.REDIS_DB_DM,adIdList)
 
 	for _,adInfo := range adList{
 		if len(adExInfoMap[adInfo["advertisement_id"]]) != 0 {
@@ -58,11 +57,11 @@ func AddAdExInfo(adList [](map[string]string)){
 	}
 
 	if len(adNotInCache) > 0 {
-		advertiserCostMap := redisclient.HGetAllAdvertiserCostInfoWhithPipeline(util.REDIS_DB_BDP_REALTIME,advertiserIdMap)
-		planCostMap := redisclient.HGetAllAdPlanCostWhithPipeline(util.REDIS_DB_BDP_REALTIME,adPlanIdMap)
+		advertiserCostMap := redisClient.HGetAllAdvertiserCostInfoWhithPipeline(util.REDIS_DB_BDP_REALTIME,advertiserIdMap)
+		planCostMap := redisClient.HGetAllAdPlanCostWhithPipeline(util.REDIS_DB_BDP_REALTIME,adPlanIdMap)
 
-		advertiserMap := redisclient.HGetAllAdvertiserInfoWhithPipeline(util.REDIS_DB_SARA,advertiserIdMap)
-		planMap := redisclient.HGetAllAdPlanWhithPipeline(util.REDIS_DB_SARA,adPlanIdMap)
+		advertiserMap := redisClient.HGetAllAdvertiserInfoWhithPipeline(util.REDIS_DB_SARA,advertiserIdMap)
+		planMap := redisClient.HGetAllAdPlanWhithPipeline(util.REDIS_DB_SARA,adPlanIdMap)
 
 		for _,adInfo := range adNotInCache{
 			adId := adInfo["advertisement_id"]
@@ -113,8 +112,8 @@ func AddAdExInfo(adList [](map[string]string)){
 				for k,v := range adExInfoNew{
 					adInfo[k] = v
 				}
-				redisclient.Hmset(util.REDIS_DM,util.REDIS_DB_DM,util.SARA_KEY_AD_EX_INFO+adId,adExInfoNew)
-                redisclient.Expire(util.REDIS_DM,util.REDIS_DB_DM,util.SARA_KEY_AD_EX_INFO+adId,300)
+				redisClient.Hmset(util.REDIS_DM,util.REDIS_DB_DM,util.SARA_KEY_AD_EX_INFO+adId,adExInfoNew)
+				redisClient.Expire(util.REDIS_DM,util.REDIS_DB_DM,util.SARA_KEY_AD_EX_INFO+adId,300)
 			}
 		}
 	}
@@ -134,19 +133,18 @@ func GetSortX(adInfo map[string]string,dailyMax float64,priceMax float64) float6
 		priceN = price / priceMax
 	}
 
-	endDate := util.GetIntValueFromMap(adInfo, "end_date", 0)
+	endDate := util.GetInt64ValueFromMap(adInfo, "end_date", 0)
 	timeX := 0.0
 
 	nowMills := time.Now().UnixNano() / 1000000
-	if endDate != 0 && int64(endDate) < nowMills{
+	if endDate != 0 && endDate < nowMills{
 		timeX = 1.0
 	}
 
-	x := timeX * 0.3 + dailyN * 0.3 + priceN *4
-
+	x := timeX * 0.3 + dailyN * 0.3 + priceN *0.4
 	log.Println("{\"in sort ：x:  \":"+util.FloatToString(x)+"}")
 
-	adInfo["sort"] = fmt.Sprintf("%f",x)
+	adInfo["sort"] = util.FloatToString(x)
 
 	return x
 }
@@ -193,7 +191,7 @@ func CheckHourLimit(ad map[string]string, appId string) bool{
         return flag
 	}
 
-	hourRatioStr := redisclient.Get(util.REDIS_BDP_OFFLINE, util.REDIS_DB_BDP_OFFLINE, util.AD_BDP_SENSEAR_HOUR_RATIO+adId)
+	hourRatioStr := redisClient.Get(util.REDIS_BDP_OFFLINE, util.REDIS_DB_BDP_OFFLINE, util.AD_BDP_SENSEAR_HOUR_RATIO+appId)
 	if hourRatioStr == "" {
 		hourRatioStr = util.NewConfigHelper().ConfigMap["hour_proportion"]
 	}
@@ -244,7 +242,7 @@ func CheckHourLimit(ad map[string]string, appId string) bool{
 
 	log.Println("{\"in checkHourLimit hourShowTimesLimit\":"+util.Int64ToSting(hourShowTimesLimit)+"}")
 
-	adStatisticsData := redisclient.HGetAll(util.REDIS_BDP_REALTIME, util.REDIS_DB_BDP_REALTIME,util.SARA_KEY_AD_STATISTICS_DATA + adId)
+	adStatisticsData := redisClient.HGetAll(util.REDIS_BDP_REALTIME, util.REDIS_DB_BDP_REALTIME,util.SARA_KEY_AD_STATISTICS_DATA + adId)
 
 	hourShowTimes := util.GetInt64ValueFromMap(adStatisticsData, "hour_exposure_times", 0)
 	hourUpdateTime := util.GetInt64ValueFromMap(adStatisticsData, "hour_update_time", 0)

@@ -4,14 +4,14 @@ import (
 	"log"
 	"util"
 	"time"
-	"encoding/json"
+	"github.com/buger/jsonparser"
 	"strconv"
 	"strings"
 	"fmt"
 )
 
-var redisclient = util.NewRedisClient()
 var buntDBclient = util.GetBuntDBInstance()
+var USE_REDIS = util.StringToInt(util.NewConfigHelper().ConfigMap["USE_REDIS"])
 
 func OfflineAdStaticInfoProcess(){
 	appIdList := GetAllApps()
@@ -21,12 +21,11 @@ func OfflineAdStaticInfoProcess(){
 	for _,appid := range appIdList.Elements(){
 		appId := util.InterfaceToString(appid)
 		adList := GetMediaAllAds(appId)
-		fmt.Println(len(adList))
+		//fmt.Println("adList:"+util.IntToString(len(adList)))
 		if len(adList) == 0 {
 			continue
 		}
-		fmt.Println(adList)
-		//fmt.Println("adList的长度:",len(adList))
+
 		cpmResult := make(map[string]([]string))
 		cptResult := make(map[string]([]string))
 
@@ -39,6 +38,7 @@ func OfflineAdStaticInfoProcess(){
 				cptAdList = append(cptAdList,adver)
 			}
 		}
+		//fmt.Println("cptAdList:"+util.IntToString(len(cptAdList)))
 
 		for _,adv := range cptAdList{
 			aAudienceOss := util.StringToListInt(adv["audience_oss"])
@@ -66,15 +66,17 @@ func OfflineAdStaticInfoProcess(){
 				}
 			}
 		}
+
+		if len(cptResult) > 0 {
+			fmt.Print("cptResult:")
+			fmt.Println(cptResult)
+		}
 		if USE_REDIS == 1{
-			//redisClient.lsetByPipeline(RedisClient.REDIS_DM,Constant.REDIS_DB_DM,cptResult,task_fre*60);
-			redisclient.LsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,cptResult,ad_static_task_fre*60)
-			log.Println("存入redis成功")
+			redisClient.LsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,cptResult,ad_static_task_fre*60)
 		}else{
+			//fmt.Println(len(cptResult))
 			for k,v := range cptResult{
 				buntDBclient.WriteArr(k,v,util.CPT_ADINFO_DB)
-				log.Println("存入buntdb数据库成功")
-
 			}
 		}
 
@@ -164,55 +166,77 @@ func OfflineAdStaticInfoProcess(){
 			advList = Sort(advList)
 			adIdList := make([]string,0)
 			for _,adInfo := range advList{
-				adIdList = append(adIdList,adInfo["advertisement_id"]+"_"+adInfo["sort"]+"_"+string(getShowTimesLimit(adInfo)))
+				adIdList = append(adIdList,adInfo["advertisement_id"]+"_"+adInfo["sort"]+"_"+util.IntToString(getShowTimesLimit(adInfo)))
 			}
 			cpmResult[targetKey] = adIdList
 		}
-
+		if len(cpmResult) > 0 {
+			fmt.Print("cpmResult:")
+			fmt.Println(cpmResult)
+		}
 		if USE_REDIS == 1{
-			redisclient.LsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,cpmResult,ad_static_task_fre*60)
+			redisClient.LsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,cpmResult,ad_static_task_fre*60)
 		}else {
-            for k,v := range cpmResult{
+			fmt.Println(len(cpmResult))
+			for k,v := range cpmResult{
             	buntDBclient.WriteArr(k,v,util.CPM_ADINFO_DB)
 			}
 		}
 		//处理广告模式CPT_NUM
-		result := redisclient.HGetAll("SENSEAR",10,"SARA_KEY_APP_SIGNKEY:"+appId)
+		result := redisClient.HGetAll("SENSEAR",10,"SARA_KEY_APP_SIGNKEY:"+appId)
 
 		if len(result) > 0 {
 			ad_config := result["ad_configuration"]
 			log.Println("AppId:"+appId)
 			log.Println("广告配置信息："+ ad_config)
+			//if ad_config != ""{
+			//	var returnData map[string]interface{}
+			//	if err := json.Unmarshal([]byte(ad_config), &returnData); err == nil {
+			//		//处理广告模式2
+			//		if _,ok := returnData["2"]; ok {
+			//			admode2data := returnData["2"]
+			//			if value,ok := admode2data.(map[string]interface{}); ok{
+			//				if len(value) > 0 {
+			//					if _,ok := value["cpt_ad_num"]; ok{
+			//						if admode2num,flag := (value["cpt_ad_num"]).(float64);flag && admode2num > 0{
+			//							key := util.AD_MODE_CPT_AD_NUM + ":" + appId + ":2"
+			//							buntDBclient.WriteInt(key,int(admode2num),util.ADMODE_NUM_DB)
+			//						}
+			//					}
+			//				}
+			//			}
+			//		}
+			//		//处理广告模式5
+			//		if _,ok := returnData["5"]; ok {
+			//			admode5data := returnData["5"]
+			//			if value,ok := admode5data.(map[string]interface{}); ok{
+			//				if len(value) > 0 {
+			//					if _,ok := value["cpt_ad_num"]; ok{
+			//						if admode5num,flag := (value["cpt_ad_num"]).(float64);flag && admode5num > 0{
+			//							key := util.AD_MODE_CPT_AD_NUM + ":" + appId + ":5"
+			//							buntDBclient.WriteInt(key,int(admode5num),util.ADMODE_NUM_DB)
+			//						}
+			//					}
+			//				}
+			//			}
+			//		}
+			//	}
+			//}
 			if ad_config != ""{
-				var returnData map[string]interface{}
-				if err := json.Unmarshal([]byte(ad_config), &returnData); err == nil {
-					//处理广告模式2
-					if _,ok := returnData["2"]; ok {
-						admode2data := returnData["2"]
-						if value,ok := admode2data.(map[string]interface{}); ok{
-							if len(value) > 0 {
-								if _,ok := value["cpt_ad_num"]; ok{
-									if admode2num,flag := (value["cpt_ad_num"]).(float64);flag && admode2num > 0{
-										key := util.AD_MODE_CPT_AD_NUM + ":" + appId + ":2"
-										buntDBclient.WriteInt(key,int(admode2num),util.ADMODE_NUM_DB)
-									}
-								}
-							}
-						}
+				//处理广告模式2
+				if admode2num,err := jsonparser.GetInt([]byte(ad_config),"2","cpt_ad_num"); err == nil{
+					log.Println("admode2num:",admode2num)
+					if admode2num > 0{
+						key := util.AD_MODE_CPT_AD_NUM + ":" + appId + ":2"
+						buntDBclient.WriteInt(key,int(admode2num),util.ADMODE_NUM_DB)
 					}
-					//处理广告模式5
-					if _,ok := returnData["5"]; ok {
-						admode5data := returnData["5"]
-						if value,ok := admode5data.(map[string]interface{}); ok{
-							if len(value) > 0 {
-								if _,ok := value["cpt_ad_num"]; ok{
-									if admode5num,flag := (value["cpt_ad_num"]).(float64);flag && admode5num > 0{
-										key := util.AD_MODE_CPT_AD_NUM + ":" + appId + ":5"
-										buntDBclient.WriteInt(key,int(admode5num),util.ADMODE_NUM_DB)
-									}
-								}
-							}
-						}
+				}
+				//处理广告模式5
+				if admode5num,err := jsonparser.GetInt([]byte(ad_config),"5","cpt_ad_num"); err == nil{
+					log.Println("admode5num:",admode5num)
+					if admode5num > 0 {
+						key := util.AD_MODE_CPT_AD_NUM + ":" + appId + ":5"
+						buntDBclient.WriteInt(key,int(admode5num),util.ADMODE_NUM_DB)
 					}
 				}
 			}
@@ -223,7 +247,7 @@ func OfflineAdStaticInfoProcess(){
 func OfflineAdRealtimeInfoProcess(){
 	appIdList := GetAllApps()
 	realtime_task_fre := util.StringToInt(util.NewConfigHelper().ConfigMap["AD_REALTIME_INFO_TASK_PRE"])
-	log.Println("adList.size:"+util.IntToString(appIdList.Len()))
+	log.Println("appIdList.size:"+util.IntToString(appIdList.Len()))
 	for _,appid := range appIdList.Elements(){
 		appId := util.InterfaceToString(appid)
 		adList := GetMediaAllAds(appId)
@@ -242,6 +266,7 @@ func OfflineAdRealtimeInfoProcess(){
 				cptAdList = append(cptAdList,adver)
 			}
 		}
+
 		for _,adv := range cptAdList{
 			checkMap := make(map[string]string)
 			adId := adv["advertisement_id"]
@@ -333,8 +358,8 @@ func OfflineAdRealtimeInfoProcess(){
 		}
 
 		if USE_REDIS == 1 {
-			redisclient.HmsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,cptResult,realtime_task_fre*60)
-			redisclient.HmsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,cpmResult,realtime_task_fre*60)
+			redisClient.HmsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,cptResult,realtime_task_fre*60)
+			redisClient.HmsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,cpmResult,realtime_task_fre*60)
 		}else {
 			for k,v := range cptResult{
 				buntDBclient.WriteMap(k,v,util.CPT_ADSTAT_DB)
@@ -368,9 +393,10 @@ func fpCPTPredicate(adver map[string]string,plusDays int) bool{
 	if endDate == 0 {
 		atDate = true
 	}else{
+		//timeStr := time.Now().AddDate(0,0,plusDays).Format("2006-01-02")
 		timeStr := time.Now().AddDate(0,0,plusDays).Format("2006-01-02")
 		t, _ := time.Parse("2006-01-02", timeStr)
-		todayMills := t.UnixNano()/1000
+		todayMills := t.UnixNano()/1000000 - 8 * 60 * 60 * 1000
 		if int(todayMills) >= startDate && int(todayMills)<= endDate {
 			atDate = true
 		}
@@ -395,7 +421,7 @@ func fpCPMPredicate(adver map[string]string,plusDays int) bool {
 	}else{
 		timeStr := time.Now().AddDate(0,0,plusDays).Format("2006-01-02")
 		t, _ := time.Parse("2006-01-02", timeStr)
-		todayMills := t.UnixNano()/1000
+		todayMills := t.UnixNano()/1000000 - 8 * 60 * 60 * 1000
 		if int(todayMills) >= startDate && int(todayMills)<= endDate {
 			atDate = true
 		}

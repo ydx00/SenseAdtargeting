@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"strconv"
+	"fmt"
 )
 const(
 	DBPATH = "BuntDB.dat"
@@ -86,7 +87,7 @@ func (client *BuntDBClient) WriteArr(key string,value []string,bucket string) er
  */
 func (client *BuntDBClient) ReadArr(key string,bucket string)([]string,error){
 	value,err := client.get(key,bucket)
-	if err != nil {
+	if err != nil || value == nil{
 		return nil,err
 	}
 	return byteDecodeToArr(value)
@@ -109,7 +110,7 @@ func (client *BuntDBClient) WriteMap(key string,value map[string]string,bucket s
  */
 func (client *BuntDBClient) ReadMap(key string,bucket string) (map[string]string,error){
 	value,err := client.get(key,bucket)
-	if err != nil {
+	if err != nil || value == nil{
 		return nil,err
 	}
 	return byteDecodeToMap(value)
@@ -123,7 +124,7 @@ func (client *BuntDBClient) WriteInt(key string, val int,bucket string) error {
 // 得到整数
 func (client *BuntDBClient) ReadInt(key string,bucket string) (int, error) {
 	val, err := client.get(key,bucket)
-	if err != nil {
+	if err != nil || val == nil{
 		return -1, err
 	}
 	return strconv.Atoi(cast.ToString(val))
@@ -151,10 +152,9 @@ func (b *BuntDBClient) set(key string, value []byte,bucket string) error {
 	return b.db.Update(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(bucket+key, cast.ToString(value), opts)
 		if err == nil {
-			log.Println("存储数据库成功，key:"+bucket+key+",value:"+cast.ToString(value))
+			fmt.Println("存储数据库成功，key:"+bucket+key+",value:"+cast.ToString(value))
 		}else {
-			log.Println("存储数据库失败：",err)
-
+			fmt.Println("存储数据库失败：",err)
 		}
 		return err
 	})
@@ -164,7 +164,7 @@ func (b *BuntDBClient) set(key string, value []byte,bucket string) error {
    将根据Key得到value
  */
 func (client *BuntDBClient) get(key string,bucket string) ([]byte, error) {
-	var val []byte
+	var val []byte = nil
 	err := client.db.View(func(tx *buntdb.Tx) error {
 		sval, err := tx.Get(bucket + key)
 		if err != nil {
@@ -177,8 +177,6 @@ func (client *BuntDBClient) get(key string,bucket string) ([]byte, error) {
 		if err == buntdb.ErrNotFound {
 			return nil, nil
 		}
-	}
-	if err != nil {
 		return nil, err
 	}
 	return val, nil

@@ -1,11 +1,17 @@
 package: .
 import:
 - package: git.apache.org/thrift.git
+  version: ~0.10.0
   subpackages:
   - lib/go/thrift
+- package: github.com/buger/jsonparser
 - package: github.com/garyburd/redigo
   subpackages:
   - redis
+- package: github.com/mailru/easyjson
+  subpackages:
+  - jlexer
+  - jwriter
+- package: github.com/robfig/cron
 - package: github.com/tidwall/buntdb
-- package: github.com/hashicorp/raft
 - package: github.com/tidwall/cast
