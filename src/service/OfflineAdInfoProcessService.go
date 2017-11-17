@@ -362,6 +362,211 @@ func OfflineAdRealtimeInfoProcess(){
 	}
 }
 
+func OfflinePreloadProcess(){
+	appIdList := GetAllApps()
+
+	task_fre := util.StringToInt(util.NewConfigHelper().ConfigMap["PRE_LOAD_TASK_PRE"])
+	for _,appid := range appIdList.Elements(){
+		appId := util.InterfaceToString(appid)
+		adList := GetMediaAllAds(appId)
+
+		if len(adList) == 0 {
+			continue
+		}
+
+		result := make(map[string]([]string))
+		model2result := make(map[string]([]string))
+		targetCpmModel2Advs := make(map[string]([](map[string]string)))
+		model5result := make(map[string][]string)
+		targetCpmModel5Advs := make(map[string]([](map[string]string)))
+
+		cptAdList := make([](map[string]string),0)
+		for _,adver := range adList{
+			if fpCPTPredicate(adver,1) {
+				cptAdList = append(cptAdList,adver)
+			}
+		}
+
+		for _,adv := range cptAdList{
+			aAudienceOss := util.StringToListInt(adv["audience_oss"])
+			adMode := adv["ad_mode"]
+			if "2" == adMode {
+				if len(aAudienceOss) > 0{
+					for _,os := range aAudienceOss{
+						adCons := util.AD_DM_SENSEAR_AD_PRELOAD+appId+":"+util.IntToString(os)
+						if _,ok := model2result[adCons]; ok{
+							model2result[adCons] = append(model2result[adCons],adv["advertisement_id"])
+						}else {
+							advIdList := make([]string,0)
+							advIdList = append(advIdList,adv["advertisement_id"])
+							model2result[adCons] = advIdList
+						}
+					}
+				}else {
+					adCons := util.AD_DM_SENSEAR_AD_PRELOAD+appId+":-1"
+					if _,ok := model2result[adCons]; ok{
+						model2result[adCons] = append(model2result[adCons],adv["advertisement_id"])
+					}else {
+						advIdList := make([]string,0)
+						advIdList = append(advIdList,adv["advertisement_id"])
+						model2result[adCons] = advIdList
+					}
+				}
+			}else if "5" == adMode{
+				if len(aAudienceOss) > 0{
+					for _,os := range aAudienceOss{
+						adCons := util.AD_DM_SENSEAR_AD_PRELOAD+appId+":"+util.IntToString(os)
+						if _,ok := model5result[adCons]; ok{
+							model5result[adCons] = append(model5result[adCons],adv["advertisement_id"])
+						}else {
+							advIdList := make([]string,0)
+							advIdList = append(advIdList,adv["advertisement_id"])
+							model5result[adCons] = advIdList
+						}
+					}
+				}else {
+					adCons := util.AD_DM_SENSEAR_AD_PRELOAD+appId+":-1"
+					if _,ok := model5result[adCons]; ok{
+						model5result[adCons] = append(model5result[adCons],adv["advertisement_id"])
+					}else {
+						advIdList := make([]string,0)
+						advIdList = append(advIdList,adv["advertisement_id"])
+						model5result[adCons] = advIdList
+					}
+				}
+			}
+		}
+
+		//处理CPM广告
+		cpmAdList := make([](map[string]string),0)
+		for _,adver := range adList{
+			if fpCPMPredicate(adver,1) {
+				cpmAdList = append(cpmAdList,adver)
+			}
+		}
+
+		AddAdExInfo(cpmAdList)
+		dailyMax := 0.0
+		priceMax := 0.0
+		
+		for _,adv := range cpmAdList{
+			aAudienceGenders := util.StringToListInt(adv["audience_genders"])
+			aAudienceAgeGroups := util.StringToListInt(adv["audience_agegroups"])
+			aAudienceOss := util.StringToListInt(adv["audience_oss"])
+			aAudienceAreas := []int{-1}
+			if _,ok := adv["areas"];ok {
+				aAudienceAreas = util.StringToListInt(adv["areas"])
+			}
+			adMode := adv["ad_mode"]
+
+			adDaily := util.GetDoubleValueFromMap(adv,"daily_min",0.0)
+			if adDaily > dailyMax {
+				dailyMax = adDaily
+			}
+
+			price := util.GetDoubleValueFromMap(adv,"actual_price",0.0);
+			if price > priceMax{
+				priceMax = price
+			}
+
+			for _,gender := range aAudienceGenders{
+				for _,ageGroup := range aAudienceAgeGroups{
+					for _,os := range aAudienceOss{
+						for _,area := range aAudienceAreas{
+							adCons := util.AD_DM_SENSEAR_AD_PRELOAD+appId+":"+util.IntToString(gender)+"_"+util.IntToString(ageGroup)+"_"+util.IntToString(os)+"_"+util.IntToString(area)
+							if "2" == adMode {
+								if _,ok := targetCpmModel2Advs[adCons];ok{
+									targetCpmModel2Advs[adCons] = append(targetCpmModel2Advs[adCons],adv)
+								}else {
+									advList := make([](map[string]string),0)
+									advList = append(advList,adv)
+									targetCpmModel2Advs[adCons] = advList
+								}
+							}else if "5" == adMode{
+								if _,ok := targetCpmModel5Advs[adCons];ok{
+									targetCpmModel5Advs[adCons] = append(targetCpmModel5Advs[adCons],adv)
+								}else {
+									advList := make([](map[string]string),0)
+									advList = append(advList,adv)
+									targetCpmModel5Advs[adCons] = advList
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		//排序
+		for targetKey,_ := range targetCpmModel2Advs{
+			advList := targetCpmModel2Advs[targetKey]
+			for _,adv := range advList{
+				GetSortX(adv,dailyMax,priceMax)
+			}
+			advList = Sort(advList)
+			adIdList := make([]string,0)
+			for _,adInfo := range advList{
+				adIdList = append(adIdList,adInfo["advertisement_id"]+"_"+adInfo["sort"])
+			}
+			model2result[targetKey] = adIdList
+		}
+
+		for targetKey,_ := range targetCpmModel5Advs{
+			advList := targetCpmModel5Advs[targetKey]
+			for _,adv := range advList{
+				GetSortX(adv,dailyMax,priceMax)
+			}
+			advList = Sort(advList)
+			adIdList := make([]string,0)
+			for _,adInfo := range advList{
+				adIdList = append(adIdList,adInfo["advertisement_id"]+"_"+adInfo["sort"])
+			}
+			model5result[targetKey] = adIdList
+		}
+
+		//截取列表的前10个元素
+		for key,_ := range model2result{
+			value := model2result[key]
+			if len(value) < 10 {
+				result[key] = value
+			}else {
+				result[key] = value[0:10]
+			}
+		}
+		//将两个map合并
+        for key,_ := range model5result{
+			newValue := model5result[key]
+			if _,ok := result[key]; !ok{
+				if len(newValue) < 10 {
+					result[key] = newValue
+				}else {
+					result[key] = newValue[0:10]
+				}
+			}else {
+				originValue := result[key]
+				if len(originValue) < 10 {
+					for _,value := range originValue{
+						originValue = append(originValue,value)
+					}
+				}else {
+					for _,value := range originValue[0:10]{
+						originValue = append(originValue,value)
+					}
+				}
+				result[key] = originValue
+			}
+		}
+
+		if USE_REDIS == 1{
+			redisClient.LsetByPipeline(util.REDIS_DM,util.REDIS_DB_DM,result,60*task_fre)
+		}else {
+			for key,value := range result{
+				buntDBclient.WriteArr(key,value,util.PRELOAD_ADINFO_DB)
+			}
+		}
+	}
+}
+
 func getShowTimesLimit(adInfo map[string]string) int{
 	showTimesLimit := -1
 	freqctrlType := adInfo["freqctrl_type"]
