@@ -5,7 +5,6 @@ import (
 	"service"
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"log"
-	"thrift_service"
 	"github.com/robfig/cron"
 )
 
