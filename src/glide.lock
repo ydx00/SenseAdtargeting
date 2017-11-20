@@ -1,0 +1,37 @@
+hash: 49a8bb8cb6c4515b7ad873425af272c8c6970797ad0ab6c7a2901ae75731cbd5
+updated: 2017-11-20T18:13:31.899598421+08:00
+imports:
+- name: git.apache.org/thrift.git
+  version: b2a4d4ae21c789b689dd162deb819665567f481c
+  subpackages:
+  - lib/go/thrift
+- name: github.com/buger/jsonparser
+  version: 5096fddd2cca678b0801ece8513a06e580981fd2
+- name: github.com/garyburd/redigo
+  version: 47dc60e71eed504e3ef8e77ee3c6fe720f3be57f
+  subpackages:
+  - internal
+  - redis
+- name: github.com/mailru/easyjson
+  version: 32fa128f234d041f196a9f3e0fea5ac9772c08e1
+  subpackages:
+  - buffer
+  - jlexer
+  - jwriter
+- name: github.com/robfig/cron
+  version: b024fc5ea0e34bc3f83d9941c8d60b0622bfaca4
+- name: github.com/tidwall/btree
+  version: 9876f1454cf0993a53d74c27196993e345f50dd1
+- name: github.com/tidwall/buntdb
+  version: b67b1b8c1658cb01502801c14e33c61e6c4cbb95
+- name: github.com/tidwall/cast
+  version: 3045c88cf4cdf6f93fe1d4405a458099cf2c8316
+- name: github.com/tidwall/gjson
+  version: ac7b6ae6f2e8e4469803ec0afe946d1f1d90f463
+- name: github.com/tidwall/grect
+  version: ba9a043346eba55344e40d66a5e74cfda3a9d293
+- name: github.com/tidwall/match
+  version: 1731857f09b1f38450e2c12409748407822dc6be
+- name: github.com/tidwall/rtree
+  version: d4a8a3d30d5729f85edfba1745241f3a621d0359
+testImports: []

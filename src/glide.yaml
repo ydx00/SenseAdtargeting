@@ -6,6 +6,7 @@ import:
   - lib/go/thrift
 - package: github.com/buger/jsonparser
 - package: github.com/garyburd/redigo
+  version: ~1.3.0
   subpackages:
   - redis
 - package: github.com/mailru/easyjson
@@ -13,5 +14,6 @@ import:
   - jlexer
   - jwriter
 - package: github.com/robfig/cron
+  version: ~1.0.0
 - package: github.com/tidwall/buntdb
 - package: github.com/tidwall/cast

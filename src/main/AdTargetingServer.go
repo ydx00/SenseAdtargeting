@@ -6,6 +6,7 @@ import (
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"log"
 	"github.com/robfig/cron"
+	"thrift_service"
 )
 
 
@@ -31,10 +32,10 @@ func startServer(){
 		return
 	}
 
-	//handler := &service.TargetingServiceImpl{}
-	//processor := thrift_service.NewAdTargetingServiceProcessor(handler)
-	//server := thrift.NewTSimpleServer4(processor, serverTransport, transportFactory, protocolFactory)
-	server := thrift.NewTSimpleServerFactory6(NewUserProcessorFactory(),serverTransport,transportFactory,transportFactory,protocolFactory,protocolFactory)
+	handler := &service.TargetingServiceImpl{}
+	processor := thrift_service.NewAdTargetingServiceProcessor(handler)
+	server := thrift.NewTSimpleServer4(processor, serverTransport, transportFactory, protocolFactory)
+
 
 	log.Println("User Service servering in %s", "127.0.0.1:"+SERVER_PORT)
 	if err = server.Serve(); err != nil {
