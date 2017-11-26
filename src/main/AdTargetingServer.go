@@ -20,6 +20,7 @@ var THRIFT_ACCEPT_QUEUE_SIZE_PER_THREAD = util.StringToInt(util.NewConfigHelper(
 
 var AD_STATIC_INFO_JOB_TIME = util.NewConfigHelper().ConfigMap["AD_STATIC_INFO_JOB_TIME"]
 var AD_REALTIME_INFO_JOB_TIME = util.NewConfigHelper().ConfigMap["AD_REALTIME_INFO_JOB_TIME"]
+var PRE_LOAD_JOB_TIME = util.NewConfigHelper().ConfigMap["PRE_LOAD_JOB_TIME"]
 
 func startServer(){
 
@@ -47,6 +48,7 @@ func startServer(){
 func main() {
 	service.OfflineAdRealtimeInfoProcess()
 	service.OfflineAdStaticInfoProcess()
+	service.OfflinePreloadProcess()
 	cronTask := cron.New()
 
 	cronTask.AddFunc(AD_REALTIME_INFO_JOB_TIME, func() {
@@ -54,6 +56,9 @@ func main() {
 	})
 	cronTask.AddFunc(AD_STATIC_INFO_JOB_TIME, func() {
 		service.OfflineAdStaticInfoProcess()
+	})
+	cronTask.AddFunc(PRE_LOAD_JOB_TIME, func() {
+		service.OfflinePreloadProcess()
 	})
 	cronTask.Start()
 	startServer()
