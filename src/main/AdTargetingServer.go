@@ -11,12 +11,6 @@ import (
 
 
 var SERVER_PORT = util.NewConfigHelper().ConfigMap["THRIFT_SERVER_PORT"]
-var AD_STATIC_INFO_JOB = util.NewConfigHelper().ConfigMap["AD_STATIC_INFO_JOB_TIME"]
-var AD_REALTIME_INFO_JOB = util.NewConfigHelper().ConfigMap["AD_REALTIME_INFO_JOB_TIME"]
-var PRE_LOAD_JOB = util.NewConfigHelper().ConfigMap["AD_REALTIME_INFO_JOB_TIME"]
-
-var THRIFT_SELECTOR_THREADS = util.StringToInt(util.NewConfigHelper().ConfigMap["THRIFT_SELECTOR_THREADS"])
-var THRIFT_ACCEPT_QUEUE_SIZE_PER_THREAD = util.StringToInt(util.NewConfigHelper().ConfigMap["THRIFT_ACCEPT_QUEUE_SIZE_PER_THREAD"])
 
 var AD_STATIC_INFO_JOB_TIME = util.NewConfigHelper().ConfigMap["AD_STATIC_INFO_JOB_TIME"]
 var AD_REALTIME_INFO_JOB_TIME = util.NewConfigHelper().ConfigMap["AD_REALTIME_INFO_JOB_TIME"]

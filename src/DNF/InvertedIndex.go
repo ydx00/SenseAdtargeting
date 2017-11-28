@@ -3,6 +3,7 @@ package DNF
 import (
 	"sync"
 	"util"
+	"log"
 )
 
 type InvertedIndex struct {
@@ -27,7 +28,7 @@ func NewInvertedIndex() *InvertedIndex {
 
 func (invertedIndex *InvertedIndex) MatchingAssignment(qry *Assignment,matchingAssignmentIndexes []int){
 	assignmentKey := qry.name + "_" + qry.value
-	for i := qry.conjSize; i >= 0; i--{
+	for i := qry.conjSize; i >= 0; i-- {
 		 if value,ok := invertedIndex.index.assignmentIndexesMap[i];ok{
 			 if _,exist := value[assignmentKey];exist{
 				 for _,idx := range value[assignmentKey]{
@@ -43,7 +44,7 @@ func (invertedIndex *InvertedIndex) MatchingAssignment(qry *Assignment,matchingA
 func (invertedIndex *InvertedIndex) CountingEachConjunction(matchingAssignmentIndexes []int,ConjunctionByCount map[int]int){
 	for _,idx := range matchingAssignmentIndexes{
 		conjIndex := invertedIndex.index.assignments[idx].conjIndex
-        if _,ok := ConjunctionByCount[conjIndex]; ok{
+        if _,ok := ConjunctionByCount[conjIndex]; ok {
 			ConjunctionByCount[conjIndex] ++
 		}else {
 			ConjunctionByCount[conjIndex] = 1
@@ -51,9 +52,9 @@ func (invertedIndex *InvertedIndex) CountingEachConjunction(matchingAssignmentIn
 	}
 }
 
-func (invertedIndex *InvertedIndex) FilteringConjByEachQueryAssi(ConjunctionByCount map[int]int, sizeofAttibute int,matchingConjunction map[int]int){
+func (invertedIndex *InvertedIndex) FilteringConjByEachQueryAssi(ConjunctionByCount map[int]int, sizeofAttribute int,matchingConjunction map[int]int){
     for key,value := range ConjunctionByCount{
-    	if value == sizeofAttibute{
+    	if value == sizeofAttribute{
 			if _,ok := matchingConjunction[key]; ok {
 				matchingConjunction[key] ++
 			}else {
@@ -72,17 +73,28 @@ func (invertedIndex *InvertedIndex) MatchingDoc(matchingConjunction map[int]int,
 	}
 }
 
-//func (invertedIndex *InvertedIndex) LoadFromFile(){
-//	if len(invertedIndex.index.assignments) > 0 {
-//		log.Println("The assignmentIndexesMap is already existed")
-//		return
-//	}
-//	for index,assignment := range invertedIndex.index.assignments{
-//		assignmentKey := assignment.name + "_" + assignment.value
-//		conjSize := assignment.conjSize
-//
-//	}
-//}
+func (invertedIndex *InvertedIndex) LoadFromFile(){
+	if len(invertedIndex.index.assignments) > 0 {
+		log.Println("The assignmentIndexesMap is already existed")
+		return
+	}
+	for i := 0; i < len(invertedIndex.index.assignments); i ++{
+		assignmentKey := invertedIndex.index.assignments[i].name + "_" + invertedIndex.index.assignments[i].value
+		conjSize := invertedIndex.index.assignments[i].conjSize
+		if _,ok := invertedIndex.index.assignmentIndexesMap[conjSize]; ok {
+			if _,exist := invertedIndex.index.assignmentIndexesMap[conjSize];exist{
+				invertedIndex.index.assignmentIndexesMap[conjSize][assignmentKey] = append(invertedIndex.index.assignmentIndexesMap[conjSize][assignmentKey],i)
+			}else {
+				invertedIndex.index.assignmentIndexesMap[conjSize][assignmentKey] = []int{i}
+			}
+		}else {
+			invertedIndex.index.assignmentIndexesMap[conjSize] = make(map[string]([]int))
+			invertedIndex.index.assignmentIndexesMap[conjSize][assignmentKey] = []int{i}
+		}
+	}
+}
+
+
 
 
 

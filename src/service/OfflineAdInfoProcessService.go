@@ -177,8 +177,6 @@ func OfflineAdStaticInfoProcess(){
 
 		if len(result) > 0 {
 			ad_config := result["ad_configuration"]
-			log.Println("AppId:"+appId)
-			log.Println("广告配置信息："+ ad_config)
 			//if ad_config != ""{
 			//	var returnData map[string]interface{}
 			//	if err := json.Unmarshal([]byte(ad_config), &returnData); err == nil {
