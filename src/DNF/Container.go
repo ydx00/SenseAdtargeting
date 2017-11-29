@@ -29,22 +29,6 @@ func NewDocWithParam(id string,size int,score float64,max_show_times int) *Doc{
 	}
 }
 
-func (doc *Doc) GetId() string{
-	return doc.id_
-}
-
-func (doc *Doc) GetScore() float64{
-	return doc.score_
-}
-
-func (doc *Doc) GetMaxShowTimes() int{
-	return doc.max_show_times_
-}
-
-func (doc *Doc) GetSize() int{
-	return doc.size_
-}
-
 func (doc *Doc) SetSize(size int){
 	doc.size_ = size
 }
@@ -54,39 +38,31 @@ func (doc *Doc) SetSize(size int){
    The structure of Conjunction
  */
 type Conjunction struct {
-	docPtr *Doc
+	docPtr Doc
 	size_ int
 }
 
-func NewConjunction(docPtr *Doc,size int) *Conjunction{
+func NewConjunction(docPtr Doc,size int) *Conjunction{
 	return &Conjunction{
 		docPtr:docPtr,
 		size_:size,
 	}
 }
 
-func (conjunction *Conjunction) GetDoc() *Doc{
-	return conjunction.docPtr
-}
-
-func (conjunction *Conjunction) GetSize() int{
-	return conjunction.size_
-}
-
 func (conjuntion *Conjunction) GetId() string{
-	return conjuntion.docPtr.GetId()
+	return conjuntion.docPtr.id_
 }
 
 /**
    The structure of Assignment
  */
 type Assignment struct{
-	conjPtr_ *Conjunction
-    cellPtr_ *Cell
+	conjPtr_ Conjunction
+    cellPtr_ Cell
     relation_ int
 }
 
-func NewAssignment(conjPtr *Conjunction, cellPtr *Cell, relation int) *Assignment{
+func NewAssignment(conjPtr Conjunction, cellPtr Cell, relation int) *Assignment{
 	return &Assignment{
 		conjPtr_:conjPtr,
 		cellPtr_:cellPtr,
@@ -94,29 +70,17 @@ func NewAssignment(conjPtr *Conjunction, cellPtr *Cell, relation int) *Assignmen
 	}
 }
 
-func (assignment *Assignment) GetCell() *Cell{
-	return assignment.cellPtr_
-}
-
-
-func (assignment *Assignment) GetRelation() int{
-	return assignment.relation_
-}
-
-func (assignment *Assignment) GetConjuction() *Conjunction{
-    return assignment.conjPtr_
-}
 
 func (assignment *Assignment) GetName() string{
-	return assignment.cellPtr_.GetName()
+	return assignment.cellPtr_.name_
 }
 
 func (assignment *Assignment) GetValue() string{
-	return assignment.cellPtr_.GetValue()
+	return assignment.cellPtr_.value_
 }
 
 func (assignment *Assignment) GetSize() int{
-	return assignment.conjPtr_.GetSize()
+	return assignment.conjPtr_.size_
 }
 
 func (assignment *Assignment) GetId() string{
@@ -129,35 +93,34 @@ func (assignment *Assignment) GetId() string{
 var DEFAULT_RELATION = 0
 
 type AssignmentStorage struct {
-	storage map[int](map[*Cell](map[int]([](*Assignment))))
+	// int :conjunction's size  Cell :kv  int :relation
+	storage map[int](map[Cell](map[int]([]Assignment)))
 	size_ int
 }
 
 func NewAssignmentStorage() *AssignmentStorage{
 	return &AssignmentStorage{
 		size_:0,
+		storage:nil,
 	}
 }
 
-func (assignmentStorage *AssignmentStorage) GetSize() int{
-	return assignmentStorage.size_
-}
 
 func (assignmentStorage *AssignmentStorage) GetGroupSize() int{
 	return len(assignmentStorage.storage)
 }
 
-func (assignmentStorage *AssignmentStorage) Match(matched [](*Assignment), QueryAssi *Assignment,kv *CellStorage){
+func (assignmentStorage *AssignmentStorage) Match(matched []Assignment, QueryAssi Assignment,kv CellStorage){
 	for s := QueryAssi.GetSize(); s >= 0; s ++{
 		if ItSize,ok := assignmentStorage.storage[s];ok{
-			var QueryCellPtr *Cell
+			var QueryCellPtr Cell
 			var QueryRela int
 			if s == 0 {
-				kv.Get(QueryCellPtr,NewCell())
+				kv.Get(&QueryCellPtr,NewCell())
 				QueryRela = DEFAULT_RELATION
 			}else {
-				QueryCellPtr = QueryAssi.GetCell()
-				QueryRela = QueryAssi.GetRelation()
+				QueryCellPtr = QueryAssi.cellPtr_
+				QueryRela = QueryAssi.relation_
 			}
 			if ItCell,exist := ItSize[QueryCellPtr];exist{
 				for key,value := range ItCell{
@@ -172,27 +135,27 @@ func (assignmentStorage *AssignmentStorage) Match(matched [](*Assignment), Query
 	}
 }
 
-func (assignmentStorage *AssignmentStorage) Put(assiPtr *Assignment){
+func (assignmentStorage *AssignmentStorage) Put(assiPtr Assignment){
     if it,ok := assignmentStorage.storage[assiPtr.GetSize()]; ok{
-		if it1,exist := it[assiPtr.GetCell()];exist {
-			if _,exist2 := it1[assiPtr.GetRelation()];exist2 {
-				assignmentStorage.storage[assiPtr.GetSize()][assiPtr.GetCell()][assiPtr.GetRelation()] = append(assignmentStorage.storage[assiPtr.GetSize()][assiPtr.GetCell()][assiPtr.GetRelation()],assiPtr)
+		if it1,exist := it[assiPtr.cellPtr_];exist {
+			if _,exist2 := it1[assiPtr.relation_];exist2 {
+				assignmentStorage.storage[assiPtr.GetSize()][assiPtr.cellPtr_][assiPtr.relation_] = append(assignmentStorage.storage[assiPtr.GetSize()][assiPtr.cellPtr_][assiPtr.relation_],assiPtr)
 			}else {
 				TempA := [](*Assignment){assiPtr}
-				assignmentStorage.storage[assiPtr.GetSize()][assiPtr.GetCell()][assiPtr.GetRelation()] = TempA
+				assignmentStorage.storage[assiPtr.GetSize()][assiPtr.cellPtr_][assiPtr.relation_] = TempA
 			}
 		}else {
 			TempA := [](*Assignment){assiPtr}
 			var TempM map[int]([](*Assignment))
-			TempM[assiPtr.GetRelation()] = TempA
-			assignmentStorage.storage[assiPtr.GetSize()][assiPtr.GetCell()] = TempM
+			TempM[assiPtr.relation_] = TempA
+			assignmentStorage.storage[assiPtr.GetSize()][assiPtr.cellPtr_] = TempM
 		}
 	}else {
 		TempA := [](*Assignment){assiPtr}
 		var TempM map[int]([](*Assignment))
-		TempM[assiPtr.GetRelation()] = TempA
-		var TempV map[*Cell](map[int]([](*Assignment)))
-		TempV[assiPtr.GetCell()] = TempM
+		TempM[assiPtr.relation_] = TempA
+		var TempV map[Cell](map[int]([](*Assignment)))
+		TempV[assiPtr.cellPtr_] = TempM
 		assignmentStorage.storage[assiPtr.GetSize()] = TempV
 	}
 	assignmentStorage.size_ ++

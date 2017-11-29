@@ -22,20 +22,13 @@ func NewCellWithParam(name string, value string) *Cell{
 	}
 }
 
-func (cell *Cell) GetName() string{
-	return cell.name_
-}
-
-func (cell *Cell) GetValue() string{
-	return cell.value_
-}
 
 
 /**
    The structure of CellStorage
  */
 type CellStorage struct {
-	storage map[string](map[string](*Cell))
+	storage map[string](map[string]Cell)
 }
 
 func NewCellStorage() *CellStorage{
@@ -45,9 +38,9 @@ func NewCellStorage() *CellStorage{
 }
 
 func (cellStorage *CellStorage) Exist(targetPtr *Cell,cellPtr *Cell) bool{
-	if value,ok := cellStorage.storage[cellPtr.GetName()]; ok{
-		if _,exist := value[cellPtr.GetValue()];exist {
-			targetPtr = value[cellPtr.GetValue()]
+	if value,ok := cellStorage.storage[cellPtr.name_]; ok{
+		if _,exist := value[cellPtr.value_];exist {
+			targetPtr = &value[cellPtr.value_]
 			return true
 		}
 	}
@@ -55,18 +48,18 @@ func (cellStorage *CellStorage) Exist(targetPtr *Cell,cellPtr *Cell) bool{
 }
 
 func (cellStorage *CellStorage) Get(targetPtr *Cell,cellPtr *Cell){
-	if value,ok := cellStorage.storage[cellPtr.GetName()]; ok{
-		if _,exist := value[cellPtr.GetValue()]; exist {
-			targetPtr = value[cellPtr.GetValue()]
+	if value,ok := cellStorage.storage[cellPtr.name_]; ok{
+		if _,exist := value[cellPtr.value_]; exist {
+			targetPtr = &value[cellPtr.value_]
 		}else {
 			targetPtr = cellPtr
-			cellStorage.storage[cellPtr.GetName()][cellPtr.GetValue()] = targetPtr
+			cellStorage.storage[cellPtr.name_][cellPtr.value_] = *targetPtr
 		}
 	}else {
 		targetPtr = cellPtr
 		TmpV := make(map[string]Cell)
-		TmpV[cellPtr.GetValue()] = *targetPtr
-		cellStorage.storage[cellPtr.GetName()] = TmpV
+		TmpV[cellPtr.value_] = *targetPtr
+		cellStorage.storage[cellPtr.name_] = TmpV
 	}
 }
 
