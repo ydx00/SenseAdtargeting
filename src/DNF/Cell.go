@@ -1,11 +1,21 @@
 package DNF
 
+/**
+   The structure of Cell
+ */
 type Cell struct {
 	name_ string
 	value_ string
 }
 
-func NewCell(name string, value string) *Cell{
+func NewCell() *Cell{
+	return &Cell{
+		name_:"",
+		value_:"",
+	}
+}
+
+func NewCellWithParam(name string, value string) *Cell{
 	return &Cell{
 		name_:name,
 		value_:value,
@@ -21,6 +31,9 @@ func (cell *Cell) GetValue() string{
 }
 
 
+/**
+   The structure of CellStorage
+ */
 type CellStorage struct {
 	storage map[string](map[string](*Cell))
 }
@@ -60,3 +73,4 @@ func (cellStorage *CellStorage) Get(targetPtr *Cell,cellPtr *Cell){
 func (cellStorage *CellStorage) Size() int{
 	return len(cellStorage.storage)
 }
+
